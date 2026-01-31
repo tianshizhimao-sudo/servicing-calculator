@@ -263,7 +263,7 @@
     
     <!-- TAB 3: INCOME -->
     <div id="tab-income" class="tab-content">
-      <div class="note-box">💡 Enter EBITDA and distribution amount. System auto-allocates to beneficial holders based on shareholding %.</div>
+      <div class="note-box">💡 Enter EBITDA (negative values accepted for losses). Distribution auto-allocates to beneficial holders by shareholding %.</div>
       
       <div class="section">
         <div class="section-title">Business Income & Distribution</div>
@@ -329,6 +329,21 @@
           <option value="other_metro">Other Metro</option>
           <option value="regional">Regional</option>
         </select>
+        <div class="helper" style="margin-top: 6px;">HEM benchmarks sourced from Melbourne Institute research. Higher in metro areas.</div>
+      </div>
+      
+      <div class="section" style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm);">
+        <div class="section-title">📚 Formula Reference</div>
+        <div style="font-size: 10px; line-height: 1.6; color: var(--muted);">
+          <p><strong>ICR</strong> = EBITDA ÷ Interest Expense</p>
+          <p style="margin-left: 12px; color: var(--navy);">Min 1.0x (covers interest), prefer 1.5x+</p>
+          <p style="margin-top: 8px;"><strong>DSCR</strong> = EBITDA ÷ (Interest × 1.5)</p>
+          <p style="margin-left: 12px; color: var(--navy);">1.5x buffer approximates P&I repayment</p>
+          <p style="margin-top: 8px;"><strong>DTI</strong> = Total Debt ÷ Annual Income</p>
+          <p style="margin-left: 12px; color: var(--navy);">Max 6x (standard), 8x+ = high risk</p>
+          <p style="margin-top: 8px;"><strong>Capacity</strong> = Surplus ÷ Monthly P&I Factor</p>
+          <p style="margin-left: 12px; color: var(--navy);">Uses buffer rate + loan term</p>
+        </div>
       </div>
     </div>
   </aside>
@@ -797,8 +812,9 @@
             
             <div class="row">
               <div class="form-group">
-                <label>EBITDA (Annual)</label>
-                <input type="number" value="${c.ebitda || ''}" placeholder="0" onchange="updateCompany(${c.id}, 'ebitda', parseFloat(this.value) || 0)">
+                <label>EBITDA (Annual) <span style="font-size: 9px; color: var(--muted);">💡 Negative = Loss</span></label>
+                <input type="number" value="${c.ebitda !== undefined ? c.ebitda : ''}" placeholder="0" onchange="updateCompany(${c.id}, 'ebitda', parseFloat(this.value))" style="${(c.ebitda || 0) < 0 ? 'border-color: var(--danger); background: var(--danger-light);' : ''}">
+                ${(c.ebitda || 0) < 0 ? '<div style="color: var(--danger); font-size: 10px; margin-top: 2px;">⚠️ Business is operating at a loss</div>' : ''}
               </div>
               <div class="form-group">
                 <label>Interest Expense (from Facilities)</label>
@@ -808,8 +824,8 @@
             
             <div class="form-group">
               <label>Total Distribution to Holders (Annual)</label>
-              <input type="number" value="${c.distribution || ''}" placeholder="0" max="${c.ebitda || 0}" onchange="updateCompany(${c.id}, 'distribution', Math.min(parseFloat(this.value) || 0, ${c.ebitda || 0}))">
-              <div class="helper">Max: ${fmt(c.ebitda || 0)} (EBITDA). Auto-allocated by shareholding %.</div>
+              <input type="number" value="${c.distribution || ''}" placeholder="0" ${(c.ebitda || 0) <= 0 ? 'disabled' : ''} max="${Math.max(c.ebitda || 0, 0)}" onchange="updateCompany(${c.id}, 'distribution', Math.min(Math.max(parseFloat(this.value) || 0, 0), Math.max(${c.ebitda || 0}, 0)))">
+              <div class="helper">${(c.ebitda || 0) <= 0 ? '⚠️ Cannot distribute when EBITDA ≤ 0' : 'Max: ' + fmt(c.ebitda || 0) + ' (EBITDA). Auto-allocated by shareholding %.'}</div>
             </div>
             
             ${distributions.length > 0 && distribution > 0 ? `
@@ -826,17 +842,19 @@
             ` : ''}
             
             <div class="mini-metrics">
-              <div class="mini-metric">
-                <div class="mini-metric-label">ICR</div>
+              <div class="mini-metric" title="Interest Cover Ratio = EBITDA ÷ Interest. Min 1.0x to cover interest, prefer 1.5x+">
+                <div class="mini-metric-label">ICR ℹ️</div>
                 <div class="mini-metric-value ${getICRClass(c.ebitda, interest)}">${icr}</div>
+                <div style="font-size: 8px; color: var(--muted);">Min 1.0x</div>
               </div>
-              <div class="mini-metric">
-                <div class="mini-metric-label">DSCR</div>
+              <div class="mini-metric" title="Debt Service Coverage = EBITDA ÷ (Interest × 1.5). Includes principal buffer. Min 1.0x">
+                <div class="mini-metric-label">DSCR ℹ️</div>
                 <div class="mini-metric-value ${getDSCRClass(c.ebitda, interest)}">${calcDSCR(c.ebitda, interest)}</div>
+                <div style="font-size: 8px; color: var(--muted);">Min 1.0x</div>
               </div>
               <div class="mini-metric">
                 <div class="mini-metric-label">Monthly EBITDA</div>
-                <div class="mini-metric-value neutral">${fmt((c.ebitda || 0) / 12)}</div>
+                <div class="mini-metric-value ${(c.ebitda || 0) < 0 ? 'negative' : 'neutral'}">${fmt((c.ebitda || 0) / 12)}</div>
               </div>
             </div>
           </div>
@@ -916,12 +934,15 @@
           
           <div style="background: var(--bg); padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: 11px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-              <span style="color: var(--muted);">HEM Estimate:</span>
+              <span style="color: var(--muted);">HEM Estimate: <span title="Household Expenditure Measure - industry standard benchmark based on Melbourne Institute data" style="cursor: help;">ℹ️</span></span>
               <span style="font-weight: 600;">${fmt(hem)}/mo</span>
             </div>
             <div style="display: flex; justify-content: space-between;">
               <span style="color: var(--muted);">Used for Assessment:</span>
-              <span style="font-weight: 600; color: ${usedExpenses === hem ? 'var(--warning)' : 'var(--navy)'};">${fmt(usedExpenses)}/mo ${usedExpenses === hem ? '(HEM)' : ''}</span>
+              <span style="font-weight: 600; color: ${usedExpenses === hem ? 'var(--warning)' : 'var(--navy)'};">${fmt(usedExpenses)}/mo ${usedExpenses === hem ? '(HEM floor)' : ''}</span>
+            </div>
+            <div style="font-size: 9px; color: var(--muted); margin-top: 4px;">
+              💡 HEM = Household Expenditure Measure (Melbourne Institute benchmark). Lenders use the higher of declared or HEM.
             </div>
           </div>
           
@@ -944,10 +965,21 @@
   function updateCompany(id, field, value) {
     const company = data.companies.find(c => c.id === id);
     if (company) {
-      company[field] = value;
-      if (field === 'distribution') {
-        company.distribution = Math.min(value, company.ebitda || 0);
+      // Handle EBITDA - allow negative (loss)
+      if (field === 'ebitda') {
+        company.ebitda = isNaN(value) ? 0 : value; // Allow negative
+        // Reset distribution if EBITDA becomes negative or zero
+        if (company.ebitda <= 0) {
+          company.distribution = 0;
+        }
+      } else if (field === 'distribution') {
+        // Distribution must be positive and capped at EBITDA (if positive)
+        const maxDist = Math.max(company.ebitda || 0, 0);
+        company.distribution = Math.min(Math.max(value || 0, 0), maxDist);
+      } else {
+        company[field] = value;
       }
+      renderIncomeTab(); // Re-render to show updates
       calculate();
     }
   }
@@ -1225,15 +1257,29 @@
     const alerts = [];
     
     data.companies.forEach(c => {
+      // Check for negative EBITDA (loss)
+      if ((c.ebitda || 0) < 0) {
+        alerts.push({ type: 'danger', message: `📉 ${c.name}: Operating at a LOSS (EBITDA: ${fmt(c.ebitda)}). This significantly impacts borrowing capacity.` });
+      }
+      
       const interest = getCompanyInterest(c.id);
       if (interest > 0) {
         const icr = (c.ebitda || 0) / interest;
-        if (icr < 1.0) {
-          alerts.push({ type: 'danger', message: `⚠️ ${c.name}: ICR ${icr.toFixed(2)}x is below 1.0 — unable to cover interest` });
+        if (icr < 0) {
+          alerts.push({ type: 'danger', message: `⛔ ${c.name}: Negative ICR — business cannot service any debt` });
+        } else if (icr < 1.0) {
+          alerts.push({ type: 'danger', message: `⚠️ ${c.name}: ICR ${icr.toFixed(2)}x is below 1.0 — unable to cover interest payments` });
+        } else if (icr < 1.5) {
+          alerts.push({ type: 'warning', message: `⚡ ${c.name}: ICR ${icr.toFixed(2)}x is marginal (prefer 1.5x+). May require mitigants.` });
         }
+        
         const dscr = (c.ebitda || 0) / (interest * 1.5);
-        if (dscr < 1.0) {
-          alerts.push({ type: 'danger', message: `⚠️ ${c.name}: DSCR ${dscr.toFixed(2)}x is below 1.0 — unable to cover debt service` });
+        if (dscr < 0) {
+          // Skip if already showing negative ICR
+        } else if (dscr < 1.0) {
+          alerts.push({ type: 'danger', message: `⚠️ ${c.name}: DSCR ${dscr.toFixed(2)}x below 1.0 — debt service coverage inadequate` });
+        } else if (dscr < 1.25) {
+          alerts.push({ type: 'warning', message: `⚡ ${c.name}: DSCR ${dscr.toFixed(2)}x is marginal (prefer 1.25x+)` });
         }
       }
       
@@ -1246,9 +1292,9 @@
     });
     
     if (dti > 8) {
-      alerts.push({ type: 'danger', message: `⚠️ Household DTI ${dti.toFixed(1)}x exceeds 8x — very high debt burden` });
+      alerts.push({ type: 'danger', message: `⚠️ Household DTI ${dti.toFixed(1)}x exceeds 8x — very high debt burden, unlikely to meet policy` });
     } else if (dti > 6) {
-      alerts.push({ type: 'warning', message: `⚡ Household DTI ${dti.toFixed(1)}x exceeds 6x — elevated debt burden` });
+      alerts.push({ type: 'warning', message: `⚡ Household DTI ${dti.toFixed(1)}x exceeds 6x — elevated debt burden, may require justification` });
     }
     
     const container = document.getElementById('alertsContainer');
