@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Professional servicing calculator for SME and self-employed borrowers. Calculate borrowing capacity, DSCR, ICR, LVR with lender policy presets.">
+  <title>Servicing Calculator — Oney & Co</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #2ECC85; --gold-dark: #1FAD73;
+      --navy: #1E293B; --navy-light: #334155;
+      --bg: #F8FAFC; --card: #FFFFFF;
+      --text: #1E293B; --muted: #64748B;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, #0F172A 100%);
+      color: white;
+      padding: 80px 20px;
+      text-align: center;
+    }
+    .hero-content { max-width: 800px; margin: 0 auto; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; margin-bottom: 16px; }
+    .hero h1 span { color: var(--gold); }
+    .hero p { font-size: 1.1rem; color: #94A3B8; margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    
+    .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn { padding: 14px 32px; font-size: 16px; font-weight: 600; border-radius: 12px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+    .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white; border: none; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(46, 204, 133, 0.3); }
+    .btn-secondary { background: transparent; color: white; border: 2px solid #475569; }
+    .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+    
+    .features { padding: 80px 20px; max-width: 1200px; margin: 0 auto; }
+    .features h2 { text-align: center; font-size: 2rem; margin-bottom: 48px; }
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+    .feature-card { background: var(--card); border-radius: 16px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+    .feature-icon { font-size: 40px; margin-bottom: 16px; }
+    .feature-card h3 { font-size: 1.25rem; margin-bottom: 8px; color: var(--navy); }
+    .feature-card p { color: var(--muted); font-size: 0.95rem; }
+    
+    .pricing { padding: 80px 20px; background: var(--navy); color: white; }
+    .pricing h2 { text-align: center; font-size: 2rem; margin-bottom: 48px; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; max-width: 900px; margin: 0 auto; }
+    .pricing-card { background: #1E293B; border-radius: 16px; padding: 32px; text-align: center; border: 2px solid #334155; }
+    .pricing-card.featured { border-color: var(--gold); background: linear-gradient(135deg, #1E293B, #0F172A); }
+    .pricing-card h3 { font-size: 1.5rem; margin-bottom: 8px; }
+    .pricing-card .price { font-size: 3rem; font-weight: 800; margin: 16px 0; }
+    .pricing-card .price span { font-size: 1rem; font-weight: 400; color: #94A3B8; }
+    .pricing-card ul { list-style: none; text-align: left; margin: 24px 0; }
+    .pricing-card li { padding: 8px 0; color: #94A3B8; display: flex; align-items: center; gap: 8px; }
+    .pricing-card li::before { content: '✓'; color: var(--gold); font-weight: bold; }
+    
+    .demo { padding: 80px 20px; text-align: center; }
+    .demo h2 { font-size: 2rem; margin-bottom: 24px; }
+    .demo p { color: var(--muted); margin-bottom: 32px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .demo-frame { max-width: 1000px; margin: 0 auto; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .demo-frame img { width: 100%; display: block; }
+    
+    .footer { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+    .footer a { color: var(--gold); text-decoration: none; }
+    
+    @media (max-width: 600px) {
+      .hero { padding: 60px 20px; }
+      .cta-buttons { flex-direction: column; }
+      .btn { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-content">
+    <h1>Servicing Calculator for <span>SME & Self-Employed</span></h1>
+    <p>Professional borrowing capacity assessment with DSCR, ICR, LVR calculations. Built by a former Big 4 bank BDM with 8+ years experience.</p>
+    <div class="cta-buttons">
+      <a href="index.html" class="btn btn-primary">🚀 Launch Calculator</a>
+      <a href="#pricing" class="btn btn-secondary">View Pricing</a>
+    </div>
+  </div>
+</section>
+
+<section class="features">
+  <h2>Why Brokers Love It</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Precise DSCR Calculation</h3>
+      <p>Uses exact P&I amortisation formula, not rough estimates. Includes buffer rate for stress testing.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏦</div>
+      <h3>Lender Presets</h3>
+      <p>One-click policy application for CBA, NAB, Westpac, ANZ, Macquarie, BOQ, La Trobe, Liberty.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🏠</div>
+      <h3>Security & LVR</h3>
+      <p>Add properties, link to facilities, track LVR by property type with automatic caps.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <h3>Distribution Tracking</h3>
+      <p>Define beneficial holders with shareholding %. System auto-allocates business distributions.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <h3>Scenario Compare</h3>
+      <p>Save multiple scenarios and compare side-by-side. Perfect for client presentations.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Privacy First</h3>
+      <p>100% local calculation. No data transmitted. No account required. Works offline.</p>
+    </div>
+  </div>
+</section>
+
+<section class="pricing" id="pricing">
+  <h2>Simple Pricing</h2>
+  <div class="pricing-grid">
+    <div class="pricing-card">
+      <h3>Lite</h3>
+      <div class="price">Free</div>
+      <ul>
+        <li>Basic servicing calculation</li>
+        <li>Waterfall chart</li>
+        <li>PDF export</li>
+        <li>Negative EBITDA support</li>
+      </ul>
+      <a href="index.html" class="btn btn-secondary" style="width:100%;">Get Started</a>
+    </div>
+    <div class="pricing-card featured">
+      <h3>Standard</h3>
+      <div class="price">$49 <span>one-time</span></div>
+      <ul>
+        <li>Everything in Lite</li>
+        <li>Rental income with shading</li>
+        <li>Sankey diagram</li>
+        <li>Save & compare scenarios</li>
+        <li>Lender policy presets</li>
+        <li>Oney tool integration</li>
+      </ul>
+      <a href="https://oneyco.gumroad.com" target="_blank" class="btn btn-primary" style="width:100%;">Buy Now</a>
+    </div>
+    <div class="pricing-card">
+      <h3>Pro</h3>
+      <div class="price">$149 <span>one-time</span></div>
+      <ul>
+        <li>Everything in Standard</li>
+        <li>Custom lender policies</li>
+        <li>Multi-facility structures</li>
+        <li>Priority email support</li>
+      </ul>
+      <a href="https://oneyco.gumroad.com" target="_blank" class="btn btn-secondary" style="width:100%;">Buy Now</a>
+    </div>
+  </div>
+</section>
+
+<section class="demo">
+  <h2>See It In Action</h2>
+  <p>A clean, professional interface designed for fast deal assessment. Works on desktop and mobile.</p>
+  <div class="cta-buttons" style="margin-top: 32px;">
+    <a href="index.html" class="btn btn-primary">🚀 Try Free Version</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>Made with ❤️ by <a href="https://oneyco.com.au">Oney & Co</a></p>
+  <p style="margin-top: 8px;">Questions? <a href="mailto:hello@oneyco.com.au">hello@oneyco.com.au</a></p>
+</footer>
+
+</body>
+</html>

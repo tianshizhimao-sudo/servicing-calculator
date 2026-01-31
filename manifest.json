@@ -1,0 +1,21 @@
+{
+  "name": "Servicing Calculator — Oney & Co",
+  "short_name": "Servicing Calc",
+  "description": "Professional SME & self-employed servicing calculator with DSCR, ICR, LVR",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#1E293B",
+  "theme_color": "#2ECC85",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

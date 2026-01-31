@@ -3,10 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Professional servicing calculator for SME and self-employed borrowers. Calculate borrowing capacity, DSCR, ICR with lender policy presets.">
+  <meta name="theme-color" content="#1E293B">
   <title>Servicing Calculator — Oney & Co</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <!-- Sankey Chart Library -->
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3"></script>
   <style>
@@ -21,36 +24,69 @@
       --purple: #7C3AED; --purple-light: rgba(124, 58, 237, 0.1);
       --text: #1E293B; --muted: #64748B;
       --radius: 12px; --radius-sm: 8px;
-      --section-entity: rgba(124, 58, 237, 0.04);
-      --section-facility: rgba(37, 99, 235, 0.04);
-      --section-income: rgba(16, 185, 129, 0.04);
-      --section-expense: rgba(239, 68, 68, 0.04);
-      --section-settings: rgba(100, 116, 139, 0.04);
     }
+    
+    /* Dark Mode */
+    [data-theme="dark"] {
+      --bg: #0F172A; --card: #1E293B; --border: #334155;
+      --text: #F1F5F9; --muted: #94A3B8;
+      --navy: #F1F5F9; --navy-light: #CBD5E1;
+      --success-light: rgba(5, 150, 105, 0.2);
+      --warning-light: rgba(217, 119, 6, 0.2);
+      --danger-light: rgba(220, 38, 38, 0.2);
+      --info-light: rgba(37, 99, 235, 0.2);
+      --purple-light: rgba(124, 58, 237, 0.2);
+      --gold-light: rgba(46, 204, 133, 0.2);
+    }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 13px; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 13px; transition: background 0.3s, color 0.3s; }
+    
+    /* Desktop Layout */
     .app { display: grid; grid-template-columns: 520px 1fr; min-height: 100vh; }
     .sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; height: 100vh; position: sticky; top: 0; }
     .main { padding: 24px 32px; overflow-y: auto; }
+    
+    /* Mobile Layout */
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+      .main { padding: 16px; }
+      .metric-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+      .row, .row-3, .row-4 { grid-template-columns: 1fr !important; }
+      .waterfall { height: 150px !important; }
+      .waterfall-bar { width: 50px !important; }
+      .waterfall-label { font-size: 7px !important; }
+      .tabs { flex-wrap: wrap; }
+      .tab { min-width: 45px; font-size: 9px; padding: 6px 2px; }
+      .preview { padding: 16px !important; }
+      .breakdown-table { font-size: 10px; }
+      .breakdown-table th, .breakdown-table td { padding: 6px 4px; }
+    }
+    
     .logo-container { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .logo-svg { width: 100px; height: auto; }
+    .logo-svg { width: 90px; height: auto; }
     .app-title { font-size: 12px; color: var(--muted); }
     .app-title strong { display: block; color: var(--navy); font-size: 14px; }
-    .tier-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: linear-gradient(90deg, #f1f5f9, #e2e8f0); border-radius: var(--radius-sm); }
+    
+    .tier-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: var(--border); border-radius: var(--radius-sm); }
     .tier-badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     .tier-badge.lite { background: #64748B; color: white; }
     .tier-badge.standard { background: var(--info); color: white; }
     .tier-badge.pro { background: linear-gradient(135deg, #8B5CF6, #6D28D9); color: white; }
     .privacy-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--success); }
+    
     .section { margin-bottom: 16px; }
     .section-title { font-size: 10px; font-weight: 700; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
     .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+    
     label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; font-weight: 500; }
     input, select, textarea { width: 100%; padding: 8px 10px; font-size: 12px; font-family: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); }
     input:focus, select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-light); }
     input[type="number"] { -moz-appearance: textfield; }
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
-    input:read-only { background: #f1f5f9; color: var(--muted); }
+    input:read-only { background: var(--border); color: var(--muted); }
+    
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
     .row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
@@ -58,45 +94,51 @@
     .helper { font-size: 10px; color: var(--muted); margin-top: 2px; font-style: italic; }
     .note-box { background: var(--info-light); border: 1px solid var(--info); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11px; color: var(--info); margin: 8px 0; }
     .warning-box { background: var(--warning-light); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11px; color: var(--warning); margin: 8px 0; }
-    .locked-feature { opacity: 0.6; pointer-events: none; position: relative; }
-    .locked-feature::after { content: '🔒 Standard+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--navy); color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; }
+    
     .chips { display: flex; flex-wrap: wrap; gap: 5px; }
     .chip { padding: 4px 9px; font-size: 10px; border-radius: 14px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--muted); transition: all 0.15s; font-weight: 500; }
     .chip:hover { border-color: var(--gold); color: var(--text); }
     .chip.active { background: var(--gold); border-color: var(--gold); color: white; }
+    
     .tabs { display: flex; gap: 2px; margin-bottom: 12px; background: var(--bg); padding: 3px; border-radius: var(--radius-sm); flex-wrap: wrap; }
-    .tab { flex: 1; min-width: 60px; padding: 8px 4px; font-size: 10px; font-weight: 500; border-radius: 6px; cursor: pointer; background: transparent; border: none; color: var(--muted); text-align: center; transition: all 0.2s; }
+    .tab { flex: 1; min-width: 50px; padding: 8px 4px; font-size: 10px; font-weight: 500; border-radius: 6px; cursor: pointer; background: transparent; border: none; color: var(--muted); text-align: center; transition: all 0.2s; }
     .tab:hover { color: var(--navy); }
-    .tab.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .tab.active { background: var(--card); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .tab[data-tab="entities"].active { color: var(--purple); }
     .tab[data-tab="facility"].active { color: var(--info); }
+    .tab[data-tab="security"].active { color: var(--warning); }
     .tab[data-tab="income"].active { color: var(--success); }
     .tab[data-tab="expenses"].active { color: var(--danger); }
-    .tab[data-tab="scenarios"].active { color: var(--warning); }
+    .tab[data-tab="scenarios"].active { color: #F59E0B; }
     .tab[data-tab="settings"].active { color: var(--muted); }
     .tab-content { display: none; padding: 12px; margin: -12px; margin-top: 0; border-radius: var(--radius-sm); }
     .tab-content.active { display: block; }
+    
     .btn { padding: 8px 14px; font-size: 11px; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
     .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white; }
     .btn-primary:hover { filter: brightness(1.1); }
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
     .btn-ghost:hover { background: var(--bg); border-color: var(--gold); }
     .btn-sm { padding: 5px 8px; font-size: 10px; }
-    .btn-warning { background: var(--warning); color: white; }
     .btn-info { background: var(--info); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
     .actions { display: flex; gap: 5px; flex-wrap: wrap; }
-    .entity-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; position: relative; }
+    
+    .entity-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; }
     .entity-card.company { border-left: 3px solid var(--info); }
     .entity-card.individual { border-left: 3px solid var(--purple); }
     .entity-card.facility { border-left: 3px solid var(--warning); }
+    .entity-card.security { border-left: 3px solid var(--success); }
     .entity-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .entity-card-title { font-size: 12px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 6px; }
     .entity-type-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
     .entity-type-badge.company { background: var(--info-light); color: var(--info); }
     .entity-type-badge.individual { background: var(--purple-light); color: var(--purple); }
     .entity-type-badge.facility { background: var(--warning-light); color: var(--warning); }
+    .entity-type-badge.security { background: var(--success-light); color: var(--success); }
     .remove-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
     .remove-btn:hover { background: var(--danger-light); }
+    
     .mini-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
     .mini-metric { text-align: center; }
     .mini-metric-label { font-size: 9px; color: var(--muted); text-transform: uppercase; }
@@ -104,70 +146,79 @@
     .mini-metric-value.positive { color: var(--success); }
     .mini-metric-value.negative { color: var(--danger); }
     .mini-metric-value.neutral { color: var(--navy); }
-    .holder-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg); border-radius: var(--radius-sm); }
-    .holder-row select { flex: 1; }
-    .holder-row input[type="number"] { width: 70px; }
+    
+    .holder-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg); border-radius: var(--radius-sm); flex-wrap: wrap; }
+    .holder-row select { flex: 1; min-width: 100px; }
+    .holder-row input[type="number"] { width: 60px; }
     .distribution-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 4px 8px; background: var(--bg); border-radius: var(--radius-sm); font-size: 11px; }
     .distribution-row .name { flex: 1; }
     .distribution-row .percent { width: 50px; text-align: right; color: var(--muted); }
     .distribution-row .amount { width: 80px; text-align: right; font-weight: 600; color: var(--success); }
-    .preview { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-    .preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid var(--gold); }
-    .preview-logo-svg { width: 100px; }
+    
+    .preview { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid var(--gold); flex-wrap: wrap; gap: 12px; }
+    .preview-logo-svg { width: 90px; }
     .preview-meta { text-align: right; }
     .preview-title { font-size: 16px; font-weight: 700; color: var(--navy); }
     .preview-subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
     .preview h2 { font-size: 10px; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
-    .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 14px 0; }
-    .metric-box { background: linear-gradient(135deg, var(--bg), white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; }
+    
+    .metric-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 14px 0; }
+    .metric-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; }
     .metric-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
     .metric-box.capacity::before { background: linear-gradient(90deg, var(--gold), var(--gold-dark)); }
     .metric-box.surplus::before { background: linear-gradient(90deg, var(--success), #047857); }
-    .metric-box.dti::before { background: linear-gradient(90deg, var(--info), #1D4ED8); }
     .metric-box.dscr::before { background: linear-gradient(90deg, var(--purple), #5B21B6); }
+    .metric-box.lvr::before { background: linear-gradient(90deg, var(--warning), #B45309); }
+    .metric-box.dti::before { background: linear-gradient(90deg, var(--info), #1D4ED8); }
     .metric-label { font-size: 9px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; }
-    .metric-value { font-size: 22px; font-weight: 700; }
+    .metric-value { font-size: 20px; font-weight: 700; }
     .metric-value.positive { color: var(--success); }
     .metric-value.negative { color: var(--danger); }
     .metric-value.neutral { color: var(--navy); }
     .metric-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
-    .waterfall { display: flex; align-items: flex-end; justify-content: space-around; height: 180px; padding: 20px 10px; border-bottom: 2px solid var(--border); margin: 20px 0; background: linear-gradient(180deg, transparent 0%, rgba(248,250,252,0.8) 100%); border-radius: var(--radius-sm); }
-    .waterfall-bar { display: flex; flex-direction: column; align-items: center; width: 70px; }
-    .waterfall-value { font-size: 10px; font-weight: 600; margin-bottom: 4px; padding: 2px 6px; border-radius: 4px; }
+    
+    .waterfall { display: flex; align-items: flex-end; justify-content: space-around; height: 160px; padding: 16px 8px; border-bottom: 2px solid var(--border); margin: 16px 0; background: var(--bg); border-radius: var(--radius-sm); }
+    .waterfall-bar { display: flex; flex-direction: column; align-items: center; width: 60px; }
+    .waterfall-value { font-size: 9px; font-weight: 600; margin-bottom: 4px; padding: 2px 4px; border-radius: 4px; }
     .waterfall-value.income-val { background: var(--success-light); color: var(--success); }
     .waterfall-value.expense-val { background: var(--danger-light); color: var(--danger); }
     .waterfall-value.result-val { background: var(--gold-light); color: var(--gold-dark); }
-    .waterfall-fill { width: 45px; border-radius: 6px 6px 0 0; transition: height 0.4s ease-out; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
-    .waterfall-fill.income { background: linear-gradient(180deg, #34D399 0%, #10B981 50%, #059669 100%); }
-    .waterfall-fill.expense { background: linear-gradient(180deg, #FCA5A5 0%, #F87171 50%, #EF4444 100%); }
-    .waterfall-fill.result { background: linear-gradient(180deg, #4ADE80 0%, var(--gold) 50%, var(--gold-dark) 100%); }
-    .waterfall-fill.deficit { background: linear-gradient(180deg, #FCA5A5 0%, #F87171 50%, #DC2626 100%); }
+    .waterfall-fill { width: 40px; border-radius: 4px 4px 0 0; transition: height 0.4s ease-out; }
+    .waterfall-fill.income { background: linear-gradient(180deg, #34D399, #059669); }
+    .waterfall-fill.expense { background: linear-gradient(180deg, #FCA5A5, #DC2626); }
+    .waterfall-fill.result { background: linear-gradient(180deg, #4ADE80, var(--gold-dark)); }
+    .waterfall-fill.deficit { background: linear-gradient(180deg, #FCA5A5, #DC2626); }
     .waterfall-label { font-size: 8px; color: var(--muted); margin-top: 6px; text-align: center; font-weight: 500; }
+    
     .breakdown-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 12px 0; }
-    .breakdown-table th, .breakdown-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    .breakdown-table th, .breakdown-table td { padding: 8px 8px; text-align: left; border-bottom: 1px solid var(--border); }
     .breakdown-table th { background: var(--bg); font-weight: 600; color: var(--navy); font-size: 10px; text-transform: uppercase; }
     .breakdown-table .amount { text-align: right; font-weight: 500; }
     .breakdown-table .amount.positive { color: var(--success); }
     .breakdown-table .amount.negative { color: var(--danger); }
-    #sankeyChart { width: 100%; height: 300px; margin: 20px 0; }
-    .scenario-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
+    
+    #sankeyChart { width: 100%; height: 280px; margin: 16px 0; }
+    
+    .scenario-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s; }
     .scenario-card:hover { border-color: var(--gold); }
     .scenario-card.active { border-color: var(--gold); background: var(--gold-light); }
     .scenario-header { display: flex; justify-content: space-between; align-items: center; }
     .scenario-name { font-weight: 600; font-size: 12px; }
     .scenario-meta { font-size: 10px; color: var(--muted); margin-top: 4px; }
-    .lender-preset { padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; margin-bottom: 6px; }
+    
+    .lender-preset { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s; margin-bottom: 6px; }
     .lender-preset:hover { border-color: var(--gold); }
     .lender-preset.active { border-color: var(--gold); background: var(--gold-light); }
     .lender-preset-name { font-weight: 600; font-size: 11px; }
     .lender-preset-details { font-size: 10px; color: var(--muted); margin-top: 2px; }
-    @media (max-width: 1100px) {
-      .app { grid-template-columns: 1fr; }
-      .sidebar { position: relative; height: auto; max-height: 60vh; }
-      .metric-grid { grid-template-columns: repeat(2, 1fr); }
-    }
+    
+    .theme-toggle { position: fixed; bottom: 20px; right: 20px; z-index: 100; background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    
+    .help-btn { position: fixed; bottom: 70px; right: 20px; z-index: 100; background: var(--info); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    
     @media print {
-      .sidebar { display: none !important; }
+      .sidebar, .theme-toggle, .help-btn { display: none !important; }
       .app { display: block !important; }
       .main { padding: 0 !important; }
       .preview { box-shadow: none !important; border: none !important; }
@@ -182,9 +233,9 @@
       <svg class="logo-svg" viewBox="0 0 190 90" xmlns="http://www.w3.org/2000/svg">
         <defs><linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC85"/><stop offset="100%" style="stop-color:#1FAD73"/></linearGradient></defs>
         <g transform="translate(38, 45)"><path d="M 0 -32 A 32 32 0 1 0 0 -31.99" fill="none" stroke="url(#greenGrad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="191 10"/><path d="M0 -38 L0 -44" stroke="url(#greenGrad)" stroke-width="5" stroke-linecap="round"/></g>
-        <text x="32" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">ney</text>
+        <text x="32" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="currentColor">ney</text>
         <text x="77" y="50" font-family="Inter, Arial" font-size="20" fill="url(#greenGrad)">&amp;</text>
-        <text x="94" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">co</text>
+        <text x="94" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="currentColor">co</text>
       </svg>
       <div class="app-title">
         <strong>Servicing Calculator</strong>
@@ -195,25 +246,27 @@
     <div class="tier-banner">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span class="tier-badge" id="tierBadge">LITE</span>
-        <span style="font-size: 11px; color: var(--muted);" id="tierLabel">Free Version</span>
+        <span style="font-size: 10px; color: var(--muted);" id="tierLabel">Free</span>
       </div>
-      <span class="privacy-badge">🔒 No Data Stored</span>
+      <span class="privacy-badge">🔒 Local Only</span>
     </div>
     
     <div class="actions" style="margin-bottom: 12px;">
-      <button class="btn btn-ghost btn-sm" onclick="resetAll()">🔄 Reset</button>
-      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">🔄</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️</button>
       <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 PDF</button>
-      <button class="btn btn-info btn-sm" onclick="showUpgradeModal()">⭐ Upgrade</button>
+      <button class="btn btn-info btn-sm" onclick="showUpgradeModal()">⭐</button>
+      <button class="btn btn-ghost btn-sm" onclick="importFromOney()">📥</button>
     </div>
     
     <div class="tabs">
-      <div class="tab active" data-tab="entities" onclick="switchTab('entities')">👥 Entities</div>
-      <div class="tab" data-tab="facility" onclick="switchTab('facility')">🏦 Facility</div>
-      <div class="tab" data-tab="income" onclick="switchTab('income')">💰 Income</div>
-      <div class="tab" data-tab="expenses" onclick="switchTab('expenses')">🏠 Expenses</div>
-      <div class="tab" data-tab="scenarios" onclick="switchTab('scenarios')">📊 Scenarios</div>
-      <div class="tab" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
+      <div class="tab active" data-tab="entities" onclick="switchTab('entities')">👥</div>
+      <div class="tab" data-tab="facility" onclick="switchTab('facility')">🏦</div>
+      <div class="tab" data-tab="security" onclick="switchTab('security')">🏠</div>
+      <div class="tab" data-tab="income" onclick="switchTab('income')">💰</div>
+      <div class="tab" data-tab="expenses" onclick="switchTab('expenses')">💳</div>
+      <div class="tab" data-tab="scenarios" onclick="switchTab('scenarios')">📊</div>
+      <div class="tab" data-tab="settings" onclick="switchTab('settings')">⚙️</div>
     </div>
     
     <!-- TAB: ENTITIES -->
@@ -221,7 +274,7 @@
       <div class="section">
         <div class="section-title">Business Entities</div>
         <div id="companyEntitiesContainer"></div>
-        <button class="btn btn-ghost btn-sm" onclick="addCompanyEntity()">+ Add Company / Trust / Partnership</button>
+        <button class="btn btn-ghost btn-sm" onclick="addCompanyEntity()">+ Add Business</button>
       </div>
       <div class="section" style="margin-top: 16px;">
         <div class="section-title">Individuals</div>
@@ -232,7 +285,7 @@
     
     <!-- TAB: FACILITY -->
     <div id="tab-facility" class="tab-content">
-      <div class="note-box">💡 Add facilities with different structures. P&I repayments calculated using exact amortisation formula.</div>
+      <div class="note-box">💡 P&I calculated using precise amortisation formula with buffer rate.</div>
       <div class="section">
         <div class="section-title">Facilities</div>
         <div id="facilitiesContainer"></div>
@@ -240,43 +293,71 @@
       </div>
     </div>
     
+    <!-- TAB: SECURITY -->
+    <div id="tab-security" class="tab-content">
+      <div class="note-box">💡 Add security properties. LVR calculated automatically. Can be imported to Credit Paper.</div>
+      <div class="section">
+        <div class="section-title">Security Properties</div>
+        <div id="securitiesContainer"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addSecurity()">+ Add Property</button>
+      </div>
+      <div class="section" style="margin-top: 16px;">
+        <div class="section-title">Security Totals</div>
+        <div id="securityTotals" style="background: var(--bg); padding: 12px; border-radius: var(--radius-sm);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>Total Security Value:</span>
+            <strong id="totalSecurityValue">$0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>Total Debt:</span>
+            <strong id="totalDebtValue">$0</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--border);">
+            <span>Blended LVR:</span>
+            <strong id="blendedLVR" style="color: var(--success);">0%</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <!-- TAB: INCOME -->
     <div id="tab-income" class="tab-content">
-      <div class="note-box">💡 Enter EBITDA (negative for loss). Distribution auto-allocates by shareholding %.</div>
+      <div class="note-box">💡 EBITDA can be negative (loss). Distribution allocates by shareholding %.</div>
       <div class="section">
-        <div class="section-title">Business Income & Distribution</div>
-        <div id="businessIncomeContainer"><p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add business entities first</p></div>
+        <div class="section-title">Business Income</div>
+        <div id="businessIncomeContainer"></div>
       </div>
       <div class="section" style="margin-top: 16px;">
-        <div class="section-title">Rental Income <span class="tier-badge standard" style="font-size: 8px; padding: 2px 4px;">Standard+</span></div>
-        <div id="rentalIncomeContainer"><p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals first</p></div>
+        <div class="section-title">Rental Income <span class="tier-badge standard" style="font-size:8px;padding:2px 4px;">Std+</span></div>
+        <div id="rentalIncomeContainer"></div>
       </div>
       <div class="section" style="margin-top: 16px;">
-        <div class="section-title">Individual Income</div>
-        <div id="individualIncomeContainer"><p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals first</p></div>
+        <div class="section-title">Personal Income</div>
+        <div id="individualIncomeContainer"></div>
       </div>
     </div>
     
     <!-- TAB: EXPENSES -->
     <div id="tab-expenses" class="tab-content">
-      <div class="note-box">💡 Living expenses assessed per household using HEM benchmarks (2024).</div>
-      <div id="expensesContainer"><p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals first</p></div>
+      <div class="note-box">💡 HEM 2024 benchmarks applied. Higher of declared or HEM used.</div>
+      <div id="expensesContainer"></div>
     </div>
     
     <!-- TAB: SCENARIOS -->
     <div id="tab-scenarios" class="tab-content">
-      <div class="note-box">💡 Save and compare multiple scenarios. Data stored locally in your browser.</div>
+      <div class="note-box">💡 Save scenarios to compare. Data stored in your browser.</div>
       <div class="section">
         <div class="section-title">Saved Scenarios</div>
-        <div id="scenariosContainer"><p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">No saved scenarios</p></div>
+        <div id="scenariosContainer"></div>
         <div class="actions" style="margin-top: 10px;">
-          <button class="btn btn-primary btn-sm" onclick="saveScenario()">💾 Save Current</button>
-          <button class="btn btn-ghost btn-sm" onclick="clearScenarios()">🗑️ Clear All</button>
+          <button class="btn btn-primary btn-sm" onclick="saveScenario()">💾 Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearScenarios()">🗑️ Clear</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportScenarios()">📤 Export</button>
         </div>
       </div>
       <div class="section" style="margin-top: 16px;">
         <div class="section-title">Comparison</div>
-        <div id="scenarioComparisonContainer"><p style="color: var(--muted); font-size: 11px;">Select 2+ scenarios to compare</p></div>
+        <div id="scenarioComparisonContainer"></div>
       </div>
     </div>
     
@@ -287,33 +368,14 @@
         <div id="lenderPresetsContainer"></div>
       </div>
       <div class="section" style="margin-top: 16px;">
-        <div class="section-title">Assessment Parameters</div>
+        <div class="section-title">Parameters</div>
         <div class="row">
-          <div class="form-group">
-            <label>Buffer Rate %</label>
-            <input type="number" id="bufferRate" value="3.0" step="0.25" oninput="calculate()">
-          </div>
-          <div class="form-group">
-            <label>Loan Term (Years)</label>
-            <select id="loanTerm" onchange="calculate()">
-              <option value="30">30 years</option>
-              <option value="25">25 years</option>
-              <option value="20">20 years</option>
-              <option value="15">15 years</option>
-            </select>
-          </div>
+          <div class="form-group"><label>Buffer %</label><input type="number" id="bufferRate" value="3.0" step="0.25" oninput="calculate()"></div>
+          <div class="form-group"><label>Term (yrs)</label><select id="loanTerm" onchange="calculate()"><option value="30">30</option><option value="25">25</option><option value="20">20</option><option value="15">15</option></select></div>
         </div>
         <div class="row">
-          <div class="form-group">
-            <label>Income Shading %</label>
-            <input type="number" id="incomeShading" value="80" step="5" min="50" max="100" oninput="calculate()">
-            <div class="helper">Apply to self-employed income</div>
-          </div>
-          <div class="form-group">
-            <label>Rental Shading %</label>
-            <input type="number" id="rentalShading" value="80" step="5" min="50" max="100" oninput="calculate()">
-            <div class="helper">Vacancy/expense allowance</div>
-          </div>
+          <div class="form-group"><label>Income Shade %</label><input type="number" id="incomeShading" value="80" step="5" oninput="calculate()"></div>
+          <div class="form-group"><label>Rental Shade %</label><input type="number" id="rentalShading" value="80" step="5" oninput="calculate()"></div>
         </div>
       </div>
       <div class="section" style="margin-top: 16px;">
@@ -324,26 +386,23 @@
           <option value="other_metro">Other Metro</option>
           <option value="regional">Regional</option>
         </select>
-        <div class="helper" style="margin-top: 6px;">HEM 2024 benchmarks from Melbourne Institute / Westpac data.</div>
       </div>
       <div class="section" style="margin-top: 16px;">
-        <div class="section-title">License Key <span class="tier-badge standard" style="font-size: 8px; padding: 2px 4px;">Standard+</span></div>
+        <div class="section-title">License Key</div>
         <div class="row">
-          <div class="form-group">
-            <input type="text" id="licenseKey" placeholder="Enter license key..." oninput="validateLicense()">
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="validateLicense()" style="height: 36px;">Activate</button>
+          <div class="form-group"><input type="text" id="licenseKey" placeholder="Enter key..." oninput="validateLicense()"></div>
+          <button class="btn btn-ghost btn-sm" onclick="validateLicense()" style="height:36px;">Activate</button>
         </div>
         <div id="licenseStatus" style="font-size: 10px; margin-top: 4px;"></div>
       </div>
-      <div class="section" style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: var(--radius-sm);">
-        <div class="section-title">📚 Formula Reference</div>
-        <div style="font-size: 10px; line-height: 1.6; color: var(--muted);">
-          <p><strong>DSCR</strong> = EBITDA ÷ Annual Debt Service</p>
-          <p style="margin-left: 12px;">Debt Service = P&I repayments (amortised)</p>
-          <p style="margin-top: 6px;"><strong>ICR</strong> = EBITDA ÷ Interest Only</p>
-          <p style="margin-top: 6px;"><strong>DTI</strong> = Total Debt ÷ Annual Gross Income</p>
-          <p style="margin-top: 6px;"><strong>Capacity</strong> = Monthly Surplus × PV Factor</p>
+      <div class="section" style="margin-top: 16px;">
+        <div class="section-title">Oney Integration</div>
+        <div class="form-group">
+          <label>Export Data To:</label>
+          <div class="chips" style="margin-top: 6px;">
+            <span class="chip" onclick="exportToTool('credit-paper')">Credit Paper</span>
+            <span class="chip" onclick="exportToTool('commercial-calc')">Commercial Calc</span>
+          </div>
         </div>
       </div>
     </div>
@@ -356,140 +415,161 @@
         <svg class="preview-logo-svg" viewBox="0 0 190 90" xmlns="http://www.w3.org/2000/svg">
           <defs><linearGradient id="greenGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC85"/><stop offset="100%" style="stop-color:#1FAD73"/></linearGradient></defs>
           <g transform="translate(38, 45)"><path d="M 0 -32 A 32 32 0 1 0 0 -31.99" fill="none" stroke="url(#greenGrad2)" stroke-width="7" stroke-linecap="round" stroke-dasharray="191 10"/><path d="M0 -38 L0 -44" stroke="url(#greenGrad2)" stroke-width="5" stroke-linecap="round"/></g>
-          <text x="32" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">ney</text>
+          <text x="32" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="currentColor">ney</text>
           <text x="77" y="50" font-family="Inter, Arial" font-size="20" fill="url(#greenGrad2)">&amp;</text>
-          <text x="94" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">co</text>
+          <text x="94" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="currentColor">co</text>
         </svg>
         <div class="preview-meta">
           <div class="preview-title">Servicing Summary</div>
-          <div class="preview-subtitle">SME / Self-Employed Assessment</div>
+          <div class="preview-subtitle">SME / Self-Employed</div>
         </div>
       </div>
       
       <div id="alertsContainer" style="margin-bottom: 16px;"></div>
       
       <div class="metric-grid">
-        <div class="metric-box capacity">
-          <div class="metric-label">Est. Capacity</div>
-          <div class="metric-value neutral" id="metricCapacity">$0</div>
-          <div class="metric-sub">borrowing power</div>
-        </div>
-        <div class="metric-box surplus">
-          <div class="metric-label">Monthly Surplus</div>
-          <div class="metric-value positive" id="metricSurplus">$0</div>
-          <div class="metric-sub">net of expenses</div>
-        </div>
-        <div class="metric-box dscr">
-          <div class="metric-label">DSCR</div>
-          <div class="metric-value neutral" id="metricDSCR">—</div>
-          <div class="metric-sub">debt service cover</div>
-        </div>
-        <div class="metric-box dti">
-          <div class="metric-label">DTI</div>
-          <div class="metric-value neutral" id="metricDTI">0.0x</div>
-          <div class="metric-sub">debt to income</div>
-        </div>
+        <div class="metric-box capacity"><div class="metric-label">Capacity</div><div class="metric-value neutral" id="metricCapacity">$0</div><div class="metric-sub">est. limit</div></div>
+        <div class="metric-box surplus"><div class="metric-label">Surplus</div><div class="metric-value positive" id="metricSurplus">$0</div><div class="metric-sub">/month</div></div>
+        <div class="metric-box dscr"><div class="metric-label">DSCR</div><div class="metric-value neutral" id="metricDSCR">—</div><div class="metric-sub">debt cover</div></div>
+        <div class="metric-box lvr"><div class="metric-label">LVR</div><div class="metric-value neutral" id="metricLVR">—</div><div class="metric-sub">loan to value</div></div>
+        <div class="metric-box dti"><div class="metric-label">DTI</div><div class="metric-value neutral" id="metricDTI">0.0x</div><div class="metric-sub">debt/income</div></div>
       </div>
       
-      <h2>Cash Flow Waterfall (Monthly)</h2>
+      <h2>Cash Flow (Monthly)</h2>
       <div class="waterfall" id="waterfallChart">
-        <div class="waterfall-bar">
-          <div class="waterfall-value income-val" id="wfBusinessVal">$0</div>
-          <div class="waterfall-fill income" id="wfBusiness" style="height: 0px;"></div>
-          <div class="waterfall-label">Business</div>
-        </div>
-        <div class="waterfall-bar">
-          <div class="waterfall-value income-val" id="wfRentalVal">$0</div>
-          <div class="waterfall-fill income" id="wfRental" style="height: 0px;"></div>
-          <div class="waterfall-label">Rental</div>
-        </div>
-        <div class="waterfall-bar">
-          <div class="waterfall-value income-val" id="wfPersonalVal">$0</div>
-          <div class="waterfall-fill income" id="wfPersonal" style="height: 0px;"></div>
-          <div class="waterfall-label">Personal</div>
-        </div>
-        <div class="waterfall-bar">
-          <div class="waterfall-value expense-val" id="wfExpensesVal">$0</div>
-          <div class="waterfall-fill expense" id="wfExpenses" style="height: 0px;"></div>
-          <div class="waterfall-label">Living</div>
-        </div>
-        <div class="waterfall-bar">
-          <div class="waterfall-value expense-val" id="wfDebtVal">$0</div>
-          <div class="waterfall-fill expense" id="wfDebt" style="height: 0px;"></div>
-          <div class="waterfall-label">Debt</div>
-        </div>
-        <div class="waterfall-bar">
-          <div class="waterfall-value result-val" id="wfSurplusVal">$0</div>
-          <div class="waterfall-fill result" id="wfSurplus" style="height: 0px;"></div>
-          <div class="waterfall-label">Surplus</div>
-        </div>
+        <div class="waterfall-bar"><div class="waterfall-value income-val" id="wfBusinessVal">$0</div><div class="waterfall-fill income" id="wfBusiness" style="height:0;"></div><div class="waterfall-label">Business</div></div>
+        <div class="waterfall-bar"><div class="waterfall-value income-val" id="wfRentalVal">$0</div><div class="waterfall-fill income" id="wfRental" style="height:0;"></div><div class="waterfall-label">Rental</div></div>
+        <div class="waterfall-bar"><div class="waterfall-value income-val" id="wfPersonalVal">$0</div><div class="waterfall-fill income" id="wfPersonal" style="height:0;"></div><div class="waterfall-label">Personal</div></div>
+        <div class="waterfall-bar"><div class="waterfall-value expense-val" id="wfExpensesVal">$0</div><div class="waterfall-fill expense" id="wfExpenses" style="height:0;"></div><div class="waterfall-label">Living</div></div>
+        <div class="waterfall-bar"><div class="waterfall-value expense-val" id="wfDebtVal">$0</div><div class="waterfall-fill expense" id="wfDebt" style="height:0;"></div><div class="waterfall-label">Debt</div></div>
+        <div class="waterfall-bar"><div class="waterfall-value result-val" id="wfSurplusVal">$0</div><div class="waterfall-fill result" id="wfSurplus" style="height:0;"></div><div class="waterfall-label">Surplus</div></div>
       </div>
       
-      <h2>Sankey Diagram — Income Flow <span class="tier-badge standard" style="font-size: 8px; padding: 2px 4px;">Standard+</span></h2>
+      <h2>Sankey — Income Flow <span class="tier-badge standard" style="font-size:8px;padding:2px 4px;">Std+</span></h2>
       <div id="sankeyChart"></div>
+      
+      <h2>Security Position</h2>
+      <table class="breakdown-table" id="securityTable">
+        <thead><tr><th>Property</th><th>Type</th><th class="amount">Value</th><th class="amount">LVR</th><th>Income?</th></tr></thead>
+        <tbody id="securityTableBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">No securities</td></tr></tbody>
+      </table>
       
       <h2>Facility Summary</h2>
       <table class="breakdown-table" id="facilityTable">
-        <thead><tr><th>Facility</th><th>Limit</th><th>Rate</th><th>Type</th><th class="amount">Monthly P&I</th><th class="amount">Interest Only</th></tr></thead>
-        <tbody id="facilityTableBody"><tr><td colspan="6" style="text-align:center; color: var(--muted);">No facilities</td></tr></tbody>
+        <thead><tr><th>Facility</th><th>Limit</th><th>Rate</th><th>Type</th><th class="amount">P&I/mo</th></tr></thead>
+        <tbody id="facilityTableBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">No facilities</td></tr></tbody>
       </table>
       
-      <h2>Business Entity Analysis</h2>
+      <h2>Business Analysis</h2>
       <table class="breakdown-table" id="businessTable">
-        <thead><tr><th>Entity</th><th class="amount">EBITDA</th><th class="amount">Debt Service</th><th class="amount">ICR</th><th class="amount">DSCR</th></tr></thead>
-        <tbody id="businessTableBody"><tr><td colspan="5" style="text-align:center; color: var(--muted);">No business entities</td></tr></tbody>
+        <thead><tr><th>Entity</th><th class="amount">EBITDA</th><th class="amount">Debt Svc</th><th class="amount">ICR</th><th class="amount">DSCR</th></tr></thead>
+        <tbody id="businessTableBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">No businesses</td></tr></tbody>
       </table>
       
       <h2>Individual Summary</h2>
       <table class="breakdown-table" id="individualTable">
         <thead><tr><th>Name</th><th class="amount">Income</th><th class="amount">Expenses</th><th class="amount">Debt</th><th class="amount">DTI</th></tr></thead>
-        <tbody id="individualTableBody"><tr><td colspan="5" style="text-align:center; color: var(--muted);">No individuals</td></tr></tbody>
+        <tbody id="individualTableBody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">No individuals</td></tr></tbody>
       </table>
       
       <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted);">
-        <strong>Disclaimer:</strong> This is an indicative estimate only. Actual borrowing capacity depends on lender credit policy.
-        <br><span style="color: var(--success);">🔒 Privacy: All calculations performed locally. No data stored or transmitted.</span>
+        <strong>Disclaimer:</strong> Indicative only. Subject to lender policy.
+        <span style="color: var(--success);">🔒 All calculations local. No data transmitted.</span>
       </div>
     </div>
   </main>
 </div>
 
-<!-- Upgrade Modal -->
-<div id="upgradeModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:white; border-radius:16px; padding:32px; max-width:500px; margin:20px;">
-    <h2 style="color:var(--navy); margin-bottom:16px;">⭐ Upgrade Your Calculator</h2>
-    <div style="display:grid; gap:16px;">
-      <div style="padding:16px; border:2px solid var(--border); border-radius:12px;">
-        <div style="font-weight:700; color:var(--navy);">Lite <span style="color:var(--muted); font-weight:400;">— Free</span></div>
-        <ul style="font-size:12px; color:var(--muted); margin-top:8px; padding-left:20px;">
-          <li>Basic servicing calculation</li>
-          <li>Waterfall chart</li>
-          <li>PDF export</li>
-        </ul>
+<!-- Theme Toggle -->
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode">🌓</button>
+
+<!-- Help Button -->
+<button class="help-btn" onclick="showHelp()" title="Help & Documentation">?</button>
+
+<!-- Modals -->
+<div id="upgradeModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card); border-radius:16px; padding:24px; max-width:480px; width:100%; max-height:90vh; overflow-y:auto;">
+    <h2 style="color:var(--navy); margin-bottom:16px;">⭐ Upgrade</h2>
+    <div style="display:grid; gap:12px;">
+      <div style="padding:12px; border:2px solid var(--border); border-radius:12px;">
+        <div style="font-weight:700;">Lite — Free</div>
+        <ul style="font-size:11px; color:var(--muted); margin-top:6px; padding-left:18px;"><li>Basic servicing</li><li>Waterfall chart</li><li>PDF export</li></ul>
       </div>
-      <div style="padding:16px; border:2px solid var(--info); border-radius:12px; background:var(--info-light);">
-        <div style="font-weight:700; color:var(--info);">Standard <span style="color:var(--muted); font-weight:400;">— $49</span></div>
-        <ul style="font-size:12px; color:var(--navy); margin-top:8px; padding-left:20px;">
-          <li>✅ Everything in Lite</li>
-          <li>✅ Rental income with shading</li>
-          <li>✅ Sankey diagram</li>
-          <li>✅ Save/compare scenarios</li>
-          <li>✅ Lender policy presets</li>
-        </ul>
+      <div style="padding:12px; border:2px solid var(--info); border-radius:12px; background:var(--info-light);">
+        <div style="font-weight:700; color:var(--info);">Standard — $49</div>
+        <ul style="font-size:11px; margin-top:6px; padding-left:18px;"><li>✅ Rental income</li><li>✅ Sankey diagram</li><li>✅ Scenario compare</li><li>✅ Lender presets</li><li>✅ Oney integration</li></ul>
       </div>
-      <div style="padding:16px; border:2px solid var(--purple); border-radius:12px; background:var(--purple-light);">
-        <div style="font-weight:700; color:var(--purple);">Pro <span style="color:var(--muted); font-weight:400;">— $149</span></div>
-        <ul style="font-size:12px; color:var(--navy); margin-top:8px; padding-left:20px;">
-          <li>✅ Everything in Standard</li>
-          <li>✅ Multi-facility structures</li>
-          <li>✅ Custom lender policies</li>
-          <li>✅ Priority support</li>
-        </ul>
+      <div style="padding:12px; border:2px solid var(--purple); border-radius:12px; background:var(--purple-light);">
+        <div style="font-weight:700; color:var(--purple);">Pro — $149</div>
+        <ul style="font-size:11px; margin-top:6px; padding-left:18px;"><li>✅ Everything in Std</li><li>✅ Custom policies</li><li>✅ Priority support</li></ul>
       </div>
     </div>
-    <div style="margin-top:20px; text-align:center;">
-      <a href="https://oneyco.gumroad.com/l/servicing-calculator" target="_blank" class="btn btn-primary" style="text-decoration:none;">Get License Key →</a>
-      <button class="btn btn-ghost" onclick="hideUpgradeModal()" style="margin-left:10px;">Close</button>
+    <div style="margin-top:16px; text-align:center;">
+      <a href="https://oneyco.gumroad.com" target="_blank" class="btn btn-primary" style="text-decoration:none;">Get License →</a>
+      <button class="btn btn-ghost" onclick="hideUpgradeModal()" style="margin-left:8px;">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="helpModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card); border-radius:16px; padding:24px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto;">
+    <h2 style="color:var(--navy); margin-bottom:16px;">📚 User Guide</h2>
+    <div style="font-size:12px; line-height:1.7; color:var(--text);">
+      <h3 style="color:var(--gold-dark); margin:16px 0 8px;">Getting Started</h3>
+      <ol style="padding-left:20px;">
+        <li><strong>Add Entities</strong> — Create business entities (company/trust) and individuals</li>
+        <li><strong>Add Facilities</strong> — Enter loan details with rate and term</li>
+        <li><strong>Add Securities</strong> — Enter property details for LVR calculation</li>
+        <li><strong>Enter Income</strong> — EBITDA for business, salary for individuals</li>
+        <li><strong>Enter Expenses</strong> — Living expenses and existing debts</li>
+      </ol>
+      
+      <h3 style="color:var(--gold-dark); margin:16px 0 8px;">Key Formulas</h3>
+      <ul style="padding-left:20px;">
+        <li><strong>DSCR</strong> = EBITDA ÷ Annual Debt Service (P&I)</li>
+        <li><strong>ICR</strong> = EBITDA ÷ Annual Interest</li>
+        <li><strong>LVR</strong> = Total Debt ÷ Total Security Value</li>
+        <li><strong>DTI</strong> = Total Debt ÷ Annual Gross Income</li>
+        <li><strong>Capacity</strong> = Monthly Surplus × PV Factor</li>
+      </ul>
+      
+      <h3 style="color:var(--gold-dark); margin:16px 0 8px;">Tips</h3>
+      <ul style="padding-left:20px;">
+        <li>Use <strong>Lender Presets</strong> to quickly apply bank policies</li>
+        <li>Save <strong>Scenarios</strong> to compare different structures</li>
+        <li><strong>Export to Credit Paper</strong> for full deal presentation</li>
+        <li>Negative EBITDA shows loss-making businesses</li>
+      </ul>
+      
+      <h3 style="color:var(--gold-dark); margin:16px 0 8px;">Keyboard Shortcuts</h3>
+      <ul style="padding-left:20px;">
+        <li><strong>Ctrl/Cmd + P</strong> — Print / PDF</li>
+        <li><strong>Ctrl/Cmd + S</strong> — Save scenario</li>
+        <li><strong>D</strong> — Toggle dark mode</li>
+      </ul>
+    </div>
+    <div style="margin-top:16px; text-align:center;">
+      <button class="btn btn-primary" onclick="hideHelp()">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<div id="importModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--card); border-radius:16px; padding:24px; max-width:480px; width:100%;">
+    <h2 style="color:var(--navy); margin-bottom:16px;">📥 Import Data</h2>
+    <p style="font-size:12px; color:var(--muted); margin-bottom:16px;">Import data from other Oney & Co tools or paste JSON.</p>
+    <div class="form-group">
+      <label>Import From:</label>
+      <div class="chips" style="margin-top:6px;">
+        <span class="chip" onclick="importFrom('commercial-calc')">Commercial Calc</span>
+        <span class="chip" onclick="importFrom('credit-paper')">Credit Paper</span>
+        <span class="chip" onclick="importFrom('clipboard')">Paste JSON</span>
+      </div>
+    </div>
+    <textarea id="importData" placeholder="Paste JSON data here..." style="margin-top:12px; height:100px;"></textarea>
+    <div style="margin-top:16px; display:flex; gap:8px;">
+      <button class="btn btn-primary" onclick="processImport()">Import</button>
+      <button class="btn btn-ghost" onclick="hideImportModal()">Cancel</button>
     </div>
   </div>
 </div>
@@ -497,109 +577,102 @@
 <script>
   // ===== DATA MODEL =====
   let data = {
-    companies: [],
-    individuals: [],
-    facilities: [],
-    households: [],
-    rentalProperties: [],
-    settings: {
-      lenderTier: 'major',
-      lenderPreset: null,
-      bufferRate: 3.0,
-      loanTerm: 30,
-      hemLocation: 'sydney',
-      incomeShading: 80,
-      rentalShading: 80
-    },
-    tier: 'lite', // lite, standard, pro
-    licenseKey: ''
+    companies: [], individuals: [], facilities: [], households: [], securities: [],
+    settings: { lenderTier: 'major', lenderPreset: null, bufferRate: 3.0, loanTerm: 30, hemLocation: 'sydney', incomeShading: 80, rentalShading: 80 },
+    tier: 'lite', licenseKey: ''
   };
   
   let scenarios = [];
-  let entityIdCounter = 0;
-  let facilityIdCounter = 0;
-  let householdIdCounter = 0;
+  let entityIdCounter = 0, facilityIdCounter = 0, householdIdCounter = 0, securityIdCounter = 0;
   
-  // HEM 2024 Benchmarks (monthly) - Updated from Melbourne Institute
+  // HEM 2024 (monthly)
   const HEM = {
-    sydney: { single: 2100, couple: 2850, perDependent: 480 },
-    melbourne: { single: 1950, couple: 2650, perDependent: 450 },
-    other_metro: { single: 1750, couple: 2350, perDependent: 400 },
-    regional: { single: 1500, couple: 2050, perDependent: 360 }
+    sydney: { single: 2100, couple: 2850, perDep: 480 },
+    melbourne: { single: 1950, couple: 2650, perDep: 450 },
+    other_metro: { single: 1750, couple: 2350, perDep: 400 },
+    regional: { single: 1500, couple: 2050, perDep: 360 }
   };
   
-  // Lender Policy Presets
+  // Lender Presets
   const LENDER_PRESETS = {
-    cba: { name: 'CBA', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 6, minDSCR: 1.0 },
-    nab: { name: 'NAB', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 7, minDSCR: 1.0 },
-    wbc: { name: 'Westpac', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 6, minDSCR: 1.0 },
-    anz: { name: 'ANZ', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 6, minDSCR: 1.0 },
-    macquarie: { name: 'Macquarie', buffer: 2.5, incomeShading: 80, rentalShading: 75, maxDTI: 8, minDSCR: 1.0 },
-    boq: { name: 'BOQ', buffer: 2.5, incomeShading: 80, rentalShading: 80, maxDTI: 7, minDSCR: 1.0 },
-    latrobe: { name: 'La Trobe', buffer: 2.0, incomeShading: 70, rentalShading: 70, maxDTI: 10, minDSCR: 0.9 },
-    liberty: { name: 'Liberty', buffer: 2.0, incomeShading: 70, rentalShading: 70, maxDTI: 10, minDSCR: 0.9 }
+    cba: { name: 'CBA', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 6, maxLVR: 80 },
+    nab: { name: 'NAB', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 7, maxLVR: 80 },
+    wbc: { name: 'Westpac', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 6, maxLVR: 80 },
+    anz: { name: 'ANZ', buffer: 3.0, incomeShading: 80, rentalShading: 80, maxDTI: 6, maxLVR: 80 },
+    macquarie: { name: 'Macquarie', buffer: 2.5, incomeShading: 80, rentalShading: 75, maxDTI: 8, maxLVR: 75 },
+    boq: { name: 'BOQ', buffer: 2.5, incomeShading: 80, rentalShading: 80, maxDTI: 7, maxLVR: 80 },
+    latrobe: { name: 'La Trobe', buffer: 2.0, incomeShading: 70, rentalShading: 70, maxDTI: 10, maxLVR: 80 },
+    liberty: { name: 'Liberty', buffer: 2.0, incomeShading: 70, rentalShading: 70, maxDTI: 10, maxLVR: 85 }
   };
   
-  // License validation (simple hash check)
-  const VALID_KEYS = {
-    'ONEY-STD-2026': 'standard',
-    'ONEY-PRO-2026': 'pro',
-    'DEMO-STANDARD': 'standard',
-    'DEMO-PRO': 'pro'
+  const VALID_KEYS = { 'ONEY-STD-2026': 'standard', 'ONEY-PRO-2026': 'pro', 'DEMO-STANDARD': 'standard', 'DEMO-PRO': 'pro' };
+  
+  // Property Types for LVR
+  const PROPERTY_TYPES = {
+    residential: { label: 'Residential', maxLVR: 80 },
+    commercial: { label: 'Commercial', maxLVR: 70 },
+    retail: { label: 'Retail', maxLVR: 65 },
+    industrial: { label: 'Industrial', maxLVR: 70 },
+    specialised: { label: 'Specialised', maxLVR: 60 },
+    land: { label: 'Land', maxLVR: 50 }
   };
   
-  // ===== INITIALIZATION =====
+  // ===== INIT =====
   document.addEventListener('DOMContentLoaded', () => {
-    loadFromLocalStorage();
-    renderLenderPresets();
-    renderScenarios();
-    calculate();
+    loadFromStorage();
+    loadTheme();
+    renderAll();
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveScenario(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); exportPDF(); }
+      if (e.key === 'd' && !e.target.matches('input, textarea, select')) { toggleTheme(); }
+    });
   });
   
-  function loadFromLocalStorage() {
-    const saved = localStorage.getItem('servicing_calc_data');
-    if (saved) {
-      try {
+  function loadFromStorage() {
+    try {
+      const saved = localStorage.getItem('oney_servicing_v2');
+      if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.data) data = { ...data, ...parsed.data };
         if (parsed.scenarios) scenarios = parsed.scenarios;
-      } catch (e) { console.log('No saved data'); }
-    }
-    
-    const savedKey = localStorage.getItem('servicing_license');
-    if (savedKey) {
-      document.getElementById('licenseKey').value = savedKey;
-      validateLicense();
-    }
+      }
+      const key = localStorage.getItem('oney_license');
+      if (key) { document.getElementById('licenseKey').value = key; validateLicense(); }
+    } catch (e) { console.log('Fresh start'); }
     
     entityIdCounter = Math.max(...data.companies.map(c => c.id), ...data.individuals.map(i => i.id), 0) + 1;
     facilityIdCounter = Math.max(...data.facilities.map(f => f.id), 0) + 1;
     householdIdCounter = Math.max(...data.households.map(h => h.id), 0) + 1;
-    
-    renderAll();
+    securityIdCounter = Math.max(...data.securities.map(s => s.id), 0) + 1;
   }
   
-  function saveToLocalStorage() {
-    localStorage.setItem('servicing_calc_data', JSON.stringify({ data, scenarios }));
+  function saveToStorage() {
+    localStorage.setItem('oney_servicing_v2', JSON.stringify({ data, scenarios }));
   }
   
-  // ===== LICENSE VALIDATION =====
+  // ===== THEME =====
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('oney_theme', isDark ? 'light' : 'dark');
+  }
+  
+  function loadTheme() {
+    const saved = localStorage.getItem('oney_theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+    else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  
+  // ===== LICENSE =====
   function validateLicense() {
     const key = document.getElementById('licenseKey').value.trim().toUpperCase();
     const status = document.getElementById('licenseStatus');
-    
-    if (!key) {
-      data.tier = 'lite';
-      status.innerHTML = '';
-    } else if (VALID_KEYS[key]) {
-      data.tier = VALID_KEYS[key];
-      localStorage.setItem('servicing_license', key);
-      status.innerHTML = `<span style="color:var(--success);">✓ ${data.tier.toUpperCase()} activated!</span>`;
-    } else {
-      data.tier = 'lite';
-      status.innerHTML = `<span style="color:var(--danger);">✗ Invalid key</span>`;
-    }
-    
+    if (!key) { data.tier = 'lite'; status.innerHTML = ''; }
+    else if (VALID_KEYS[key]) { data.tier = VALID_KEYS[key]; localStorage.setItem('oney_license', key); status.innerHTML = `<span style="color:var(--success);">✓ ${data.tier.toUpperCase()} activated</span>`; }
+    else { data.tier = 'lite'; status.innerHTML = `<span style="color:var(--danger);">✗ Invalid</span>`; }
     updateTierUI();
     calculate();
   }
@@ -607,81 +680,77 @@
   function updateTierUI() {
     const badge = document.getElementById('tierBadge');
     const label = document.getElementById('tierLabel');
-    
     badge.className = 'tier-badge ' + data.tier;
     badge.textContent = data.tier.toUpperCase();
-    
-    const labels = { lite: 'Free Version', standard: 'Standard License', pro: 'Pro License' };
-    label.textContent = labels[data.tier];
+    label.textContent = { lite: 'Free', standard: 'Standard', pro: 'Pro' }[data.tier];
   }
   
+  // ===== MODALS =====
   function showUpgradeModal() { document.getElementById('upgradeModal').style.display = 'flex'; }
   function hideUpgradeModal() { document.getElementById('upgradeModal').style.display = 'none'; }
+  function showHelp() { document.getElementById('helpModal').style.display = 'flex'; }
+  function hideHelp() { document.getElementById('helpModal').style.display = 'none'; }
+  function showImportModal() { document.getElementById('importModal').style.display = 'flex'; }
+  function hideImportModal() { document.getElementById('importModal').style.display = 'none'; }
+  function importFromOney() { showImportModal(); }
   
-  // ===== TAB SWITCHING =====
-  function switchTab(tabName) {
+  // ===== TABS =====
+  function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-    
-    if (tabName === 'facility') renderFacilitiesTab();
-    if (tabName === 'income') renderIncomeTab();
-    if (tabName === 'expenses') renderExpensesTab();
-    if (tabName === 'scenarios') renderScenarios();
+    document.querySelector(`.tab[data-tab="${tab}"]`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    if (['facility', 'security', 'income', 'expenses', 'scenarios'].includes(tab)) renderAll();
   }
   
-  // ===== ENTITY MANAGEMENT =====
+  // ===== ENTITY CRUD =====
   function addCompanyEntity() {
     const id = ++entityIdCounter;
     data.companies.push({ id, name: `Company ${data.companies.length + 1}`, type: 'company', ebitda: 0, distribution: 0, holders: [] });
-    renderCompanyEntities();
-    calculate();
+    renderAll();
   }
   
   function addIndividualEntity() {
     const id = ++entityIdCounter;
-    if (data.households.length === 0) {
-      data.households.push({ id: ++householdIdCounter, name: 'Household 1' });
-    }
-    data.individuals.push({
-      id, name: `Individual ${data.individuals.length + 1}`, householdId: data.households[0].id,
-      income: 0, incomeType: 'none', expenses: 0, dependents: 0, existingDebt: 0, creditCards: 0,
-      rentalIncome: 0, rentalExpenses: 0, vacancyRate: 5
-    });
-    renderIndividualEntities();
-    calculate();
+    if (data.households.length === 0) data.households.push({ id: ++householdIdCounter, name: 'Household 1' });
+    data.individuals.push({ id, name: `Individual ${data.individuals.length + 1}`, householdId: data.households[0].id, income: 0, incomeType: 'none', expenses: 0, dependents: 0, existingDebt: 0, creditCards: 0, rentalIncome: 0, rentalExpenses: 0, vacancyRate: 5 });
+    renderAll();
   }
   
   function addFacility() {
     const id = ++facilityIdCounter;
-    data.facilities.push({
-      id, name: `Facility ${data.facilities.length + 1}`, borrowerId: null, borrowerType: 'company',
-      limit: 0, rate: 7.0, type: 'pi', term: 30 // pi = P&I, io = Interest Only
-    });
-    renderFacilitiesTab();
-    calculate();
+    data.facilities.push({ id, name: `Facility ${data.facilities.length + 1}`, borrowerId: null, borrowerType: 'company', limit: 0, rate: 7.0, type: 'pi', term: 30, securityId: null });
+    renderAll();
   }
   
-  function removeCompany(id) { data.companies = data.companies.filter(c => c.id !== id); data.facilities = data.facilities.filter(f => !(f.borrowerType === 'company' && f.borrowerId === id)); renderAll(); calculate(); }
-  function removeIndividual(id) { data.individuals = data.individuals.filter(i => i.id !== id); data.companies.forEach(c => { c.holders = c.holders.filter(h => h.entityId !== id); }); data.facilities = data.facilities.filter(f => !(f.borrowerType === 'individual' && f.borrowerId === id)); renderAll(); calculate(); }
-  function removeFacility(id) { data.facilities = data.facilities.filter(f => f.id !== id); renderFacilitiesTab(); calculate(); }
+  function addSecurity() {
+    const id = ++securityIdCounter;
+    data.securities.push({ id, address: '', type: 'residential', value: 0, hasIncome: false, grossRent: 0, ownerType: 'borrower', ownerId: null });
+    renderAll();
+  }
   
-  function addHolder(companyId) { const c = data.companies.find(x => x.id === companyId); if (c) { c.holders.push({ entityId: '', percentage: 0 }); renderCompanyEntities(); } }
-  function removeHolder(companyId, idx) { const c = data.companies.find(x => x.id === companyId); if (c) { c.holders.splice(idx, 1); renderCompanyEntities(); calculate(); } }
-  function updateHolder(companyId, idx, field, value) { const c = data.companies.find(x => x.id === companyId); if (c && c.holders[idx]) { c.holders[idx][field] = value; renderCompanyEntities(); calculate(); } }
-  function updateCompany(id, field, value) { const c = data.companies.find(x => x.id === id); if (c) { if (field === 'ebitda') { c.ebitda = value; if (c.ebitda <= 0) c.distribution = 0; } else if (field === 'distribution') { c.distribution = Math.min(Math.max(value, 0), Math.max(c.ebitda, 0)); } else { c[field] = value; } renderIncomeTab(); calculate(); } }
-  function updateIndividual(id, field, value) { const i = data.individuals.find(x => x.id === id); if (i) { i[field] = value; calculate(); } }
-  function updateFacility(id, field, value) { const f = data.facilities.find(x => x.id === id); if (f) { f[field] = value; renderFacilitiesTab(); calculate(); } }
-  function updateFacilityBorrower(id, value) { const f = data.facilities.find(x => x.id === id); if (f && value) { const [type, borrowerId] = value.split(':'); f.borrowerType = type; f.borrowerId = parseInt(borrowerId); calculate(); } }
+  function removeCompany(id) { data.companies = data.companies.filter(c => c.id !== id); data.facilities = data.facilities.filter(f => !(f.borrowerType === 'company' && f.borrowerId === id)); renderAll(); }
+  function removeIndividual(id) { data.individuals = data.individuals.filter(i => i.id !== id); data.companies.forEach(c => c.holders = c.holders.filter(h => h.entityId !== id)); data.facilities = data.facilities.filter(f => !(f.borrowerType === 'individual' && f.borrowerId === id)); renderAll(); }
+  function removeFacility(id) { data.facilities = data.facilities.filter(f => f.id !== id); renderAll(); }
+  function removeSecurity(id) { data.securities = data.securities.filter(s => s.id !== id); renderAll(); }
   
-  function addHousehold() { const id = ++householdIdCounter; data.households.push({ id, name: `Household ${data.households.length + 1}` }); renderIndividualEntities(); }
+  function updateCompany(id, field, value) { const c = data.companies.find(x => x.id === id); if (c) { if (field === 'ebitda') { c.ebitda = value; if (c.ebitda <= 0) c.distribution = 0; } else if (field === 'distribution') { c.distribution = Math.min(Math.max(value, 0), Math.max(c.ebitda, 0)); } else { c[field] = value; } renderAll(); } }
+  function updateIndividual(id, field, value) { const i = data.individuals.find(x => x.id === id); if (i) { i[field] = value; renderAll(); } }
+  function updateFacility(id, field, value) { const f = data.facilities.find(x => x.id === id); if (f) { f[field] = value; renderAll(); } }
+  function updateSecurity(id, field, value) { const s = data.securities.find(x => x.id === id); if (s) { s[field] = value; renderAll(); } }
+  function updateFacilityBorrower(id, value) { const f = data.facilities.find(x => x.id === id); if (f && value) { const [type, bid] = value.split(':'); f.borrowerType = type; f.borrowerId = parseInt(bid); calculate(); } }
   
-  // ===== RENDER FUNCTIONS =====
+  function addHolder(cid) { const c = data.companies.find(x => x.id === cid); if (c) { c.holders.push({ entityId: '', percentage: 0 }); renderAll(); } }
+  function removeHolder(cid, idx) { const c = data.companies.find(x => x.id === cid); if (c) { c.holders.splice(idx, 1); renderAll(); } }
+  function updateHolder(cid, idx, field, value) { const c = data.companies.find(x => x.id === cid); if (c && c.holders[idx]) { c.holders[idx][field] = value; renderAll(); } }
+  function addHousehold() { data.households.push({ id: ++householdIdCounter, name: `Household ${data.households.length + 1}` }); renderAll(); }
+  
+  // ===== RENDER =====
   function renderAll() {
     renderCompanyEntities();
     renderIndividualEntities();
     renderFacilitiesTab();
+    renderSecuritiesTab();
     renderIncomeTab();
     renderExpensesTab();
     renderScenarios();
@@ -690,352 +759,194 @@
   }
   
   function renderCompanyEntities() {
-    const container = document.getElementById('companyEntitiesContainer');
-    if (data.companies.length === 0) { container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 10px;">No business entities yet</p>'; return; }
-    
-    container.innerHTML = data.companies.map(c => {
-      const totalHolding = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
-      const holdingAlert = c.holders.length > 0 && totalHolding !== 100;
-      const typeLabel = c.type === 'trust' ? 'TRUST' : c.type === 'partnership' ? 'P/SHIP' : 'CO';
-      
+    const c = document.getElementById('companyEntitiesContainer');
+    if (data.companies.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:10px;">No businesses yet</p>'; return; }
+    c.innerHTML = data.companies.map(co => {
+      const total = co.holders.reduce((s, h) => s + (parseFloat(h.percentage) || 0), 0);
+      const alert = co.holders.length > 0 && total !== 100;
       return `<div class="entity-card company">
-        <div class="entity-card-header">
-          <div class="entity-card-title"><span class="entity-type-badge company">${typeLabel}</span>
-            <input type="text" value="${c.name}" onchange="updateCompany(${c.id}, 'name', this.value)" style="border:none; background:transparent; font-weight:600; font-size:12px; width:140px;">
-          </div>
-          <button class="remove-btn" onclick="removeCompany(${c.id})">×</button>
-        </div>
-        <div class="form-group">
-          <label>Entity Type</label>
-          <select onchange="updateCompany(${c.id}, 'type', this.value)">
-            <option value="company" ${c.type==='company'?'selected':''}>Company (Pty Ltd)</option>
-            <option value="trust" ${c.type==='trust'?'selected':''}>Trust</option>
-            <option value="partnership" ${c.type==='partnership'?'selected':''}>Partnership</option>
-          </select>
-        </div>
-        <div class="section-title" style="margin-top:10px; font-size:9px;">Beneficial Holders</div>
-        <div id="holders-${c.id}">
-          ${c.holders.length === 0 ? '<p style="color:var(--muted); font-size:10px; padding:6px;">No holders defined</p>' : 
-            c.holders.map((h, idx) => `<div class="holder-row">
-              <select onchange="updateHolder(${c.id}, ${idx}, 'entityId', parseInt(this.value) || this.value)">
-                <option value="">Select...</option>
-                <option value="other" ${h.entityId === 'other' ? 'selected' : ''}>External</option>
-                ${data.individuals.map(i => `<option value="${i.id}" ${h.entityId === i.id ? 'selected' : ''}>${i.name}</option>`).join('')}
-              </select>
-              <input type="number" value="${h.percentage || ''}" placeholder="%" onchange="updateHolder(${c.id}, ${idx}, 'percentage', parseFloat(this.value) || 0)" style="width:55px;">
-              <span style="font-size:10px; color:var(--muted);">%</span>
-              <button class="remove-btn" onclick="removeHolder(${c.id}, ${idx})" style="padding:0 4px;">×</button>
-            </div>`).join('')}
-        </div>
-        ${holdingAlert ? `<div style="background:var(--danger-light); color:var(--danger); padding:6px 10px; border-radius:6px; font-size:10px; margin-top:6px;">⚠️ Holdings = ${totalHolding.toFixed(0)}% (must be 100%)</div>` : 
-          c.holders.length > 0 ? `<div style="background:var(--success-light); color:var(--success); padding:6px 10px; border-radius:6px; font-size:10px; margin-top:6px;">✓ Holdings = 100%</div>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="addHolder(${c.id})" style="margin-top:6px;">+ Add Holder</button>
+        <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge company">${co.type === 'trust' ? 'TRUST' : co.type === 'partnership' ? 'P/SHIP' : 'CO'}</span><input type="text" value="${co.name}" onchange="updateCompany(${co.id},'name',this.value)" style="border:none;background:transparent;font-weight:600;font-size:12px;width:130px;color:var(--text);"></div><button class="remove-btn" onclick="removeCompany(${co.id})">×</button></div>
+        <div class="form-group"><label>Type</label><select onchange="updateCompany(${co.id},'type',this.value)"><option value="company" ${co.type==='company'?'selected':''}>Company</option><option value="trust" ${co.type==='trust'?'selected':''}>Trust</option><option value="partnership" ${co.type==='partnership'?'selected':''}>Partnership</option></select></div>
+        <div class="section-title" style="margin-top:8px;font-size:9px;">Beneficial Holders</div>
+        ${co.holders.length === 0 ? '<p style="color:var(--muted);font-size:10px;padding:4px;">No holders</p>' : co.holders.map((h, i) => `<div class="holder-row"><select onchange="updateHolder(${co.id},${i},'entityId',parseInt(this.value)||this.value)"><option value="">Select...</option><option value="other" ${h.entityId==='other'?'selected':''}>External</option>${data.individuals.map(ind => `<option value="${ind.id}" ${h.entityId===ind.id?'selected':''}>${ind.name}</option>`).join('')}</select><input type="number" value="${h.percentage||''}" placeholder="%" onchange="updateHolder(${co.id},${i},'percentage',parseFloat(this.value)||0)" style="width:55px;"><span style="font-size:10px;">%</span><button class="remove-btn" onclick="removeHolder(${co.id},${i})" style="padding:0 4px;">×</button></div>`).join('')}
+        ${alert ? `<div style="background:var(--danger-light);color:var(--danger);padding:4px 8px;border-radius:4px;font-size:10px;margin-top:4px;">⚠️ ${total}% ≠ 100%</div>` : co.holders.length > 0 ? `<div style="background:var(--success-light);color:var(--success);padding:4px 8px;border-radius:4px;font-size:10px;margin-top:4px;">✓ 100%</div>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="addHolder(${co.id})" style="margin-top:6px;">+ Holder</button>
       </div>`;
     }).join('');
   }
   
   function renderIndividualEntities() {
-    const container = document.getElementById('individualEntitiesContainer');
-    if (data.individuals.length === 0) { container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 10px;">No individuals yet</p>'; return; }
-    
-    container.innerHTML = data.individuals.map(i => `<div class="entity-card individual">
-      <div class="entity-card-header">
-        <div class="entity-card-title"><span class="entity-type-badge individual">IND</span>
-          <input type="text" value="${i.name}" onchange="updateIndividual(${i.id}, 'name', this.value)" style="border:none; background:transparent; font-weight:600; font-size:12px; width:140px;">
-        </div>
-        <button class="remove-btn" onclick="removeIndividual(${i.id})">×</button>
-      </div>
-      <div class="form-group">
-        <label>Household</label>
-        <div style="display:flex; gap:6px;">
-          <select style="flex:1;" onchange="updateIndividual(${i.id}, 'householdId', parseInt(this.value))">
-            ${data.households.map(h => `<option value="${h.id}" ${i.householdId === h.id ? 'selected' : ''}>${h.name}</option>`).join('')}
-          </select>
-          <button class="btn btn-ghost btn-sm" onclick="addHousehold()" title="Add household">+</button>
-        </div>
-      </div>
+    const c = document.getElementById('individualEntitiesContainer');
+    if (data.individuals.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:10px;">No individuals yet</p>'; return; }
+    c.innerHTML = data.individuals.map(i => `<div class="entity-card individual">
+      <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge individual">IND</span><input type="text" value="${i.name}" onchange="updateIndividual(${i.id},'name',this.value)" style="border:none;background:transparent;font-weight:600;font-size:12px;width:130px;color:var(--text);"></div><button class="remove-btn" onclick="removeIndividual(${i.id})">×</button></div>
+      <div class="form-group"><label>Household</label><div style="display:flex;gap:6px;"><select style="flex:1;" onchange="updateIndividual(${i.id},'householdId',parseInt(this.value))">${data.households.map(h => `<option value="${h.id}" ${i.householdId===h.id?'selected':''}>${h.name}</option>`).join('')}</select><button class="btn btn-ghost btn-sm" onclick="addHousehold()">+</button></div></div>
     </div>`).join('');
   }
   
   function renderFacilitiesTab() {
-    const container = document.getElementById('facilitiesContainer');
-    if (data.facilities.length === 0) { container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">No facilities. Add to calculate debt service.</p>'; return; }
-    
-    const allBorrowers = [...data.companies.map(c => ({ id: c.id, name: c.name, type: 'company' })), ...data.individuals.map(i => ({ id: i.id, name: i.name, type: 'individual' }))];
-    
-    container.innerHTML = data.facilities.map(f => {
+    const c = document.getElementById('facilitiesContainer');
+    if (data.facilities.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:20px;">No facilities</p>'; return; }
+    const borrowers = [...data.companies.map(x => ({ id: x.id, name: x.name, type: 'company' })), ...data.individuals.map(x => ({ id: x.id, name: x.name, type: 'individual' }))];
+    c.innerHTML = data.facilities.map(f => {
       const { monthlyPI, monthlyIO } = calcFacilityPayments(f);
-      
       return `<div class="entity-card facility">
-        <div class="entity-card-header">
-          <div class="entity-card-title"><span class="entity-type-badge facility">FAC</span>
-            <input type="text" value="${f.name}" onchange="updateFacility(${f.id}, 'name', this.value)" style="border:none; background:transparent; font-weight:600; font-size:12px; width:110px;">
-          </div>
-          <button class="remove-btn" onclick="removeFacility(${f.id})">×</button>
-        </div>
-        <div class="form-group">
-          <label>Borrower</label>
-          <select onchange="updateFacilityBorrower(${f.id}, this.value)">
-            <option value="">Select...</option>
-            ${allBorrowers.map(b => `<option value="${b.type}:${b.id}" ${f.borrowerType === b.type && f.borrowerId === b.id ? 'selected' : ''}>${b.name} (${b.type === 'company' ? 'Biz' : 'Ind'})</option>`).join('')}
-          </select>
-        </div>
-        <div class="row-3">
-          <div class="form-group"><label>Limit ($)</label><input type="number" value="${f.limit || ''}" placeholder="0" onchange="updateFacility(${f.id}, 'limit', parseFloat(this.value) || 0)"></div>
-          <div class="form-group"><label>Rate (%)</label><input type="number" value="${f.rate || ''}" placeholder="7.0" step="0.1" onchange="updateFacility(${f.id}, 'rate', parseFloat(this.value) || 0)"></div>
-          <div class="form-group"><label>Term (yrs)</label><input type="number" value="${f.term || 30}" min="1" max="30" onchange="updateFacility(${f.id}, 'term', parseInt(this.value) || 30)"></div>
-        </div>
-        <div class="form-group">
-          <label>Repayment Type</label>
-          <div class="chips">
-            <span class="chip ${f.type === 'pi' ? 'active' : ''}" onclick="updateFacility(${f.id}, 'type', 'pi')">P&I</span>
-            <span class="chip ${f.type === 'io' ? 'active' : ''}" onclick="updateFacility(${f.id}, 'type', 'io')">Interest Only</span>
-          </div>
-        </div>
-        <div class="mini-metrics">
-          <div class="mini-metric"><div class="mini-metric-label">Monthly P&I</div><div class="mini-metric-value negative">-${fmt(monthlyPI)}</div></div>
-          <div class="mini-metric"><div class="mini-metric-label">Monthly IO</div><div class="mini-metric-value negative">-${fmt(monthlyIO)}</div></div>
-          <div class="mini-metric"><div class="mini-metric-label">Annual Interest</div><div class="mini-metric-value negative">-${fmt(monthlyIO * 12)}</div></div>
-        </div>
+        <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge facility">FAC</span><input type="text" value="${f.name}" onchange="updateFacility(${f.id},'name',this.value)" style="border:none;background:transparent;font-weight:600;font-size:12px;width:100px;color:var(--text);"></div><button class="remove-btn" onclick="removeFacility(${f.id})">×</button></div>
+        <div class="form-group"><label>Borrower</label><select onchange="updateFacilityBorrower(${f.id},this.value)"><option value="">Select...</option>${borrowers.map(b => `<option value="${b.type}:${b.id}" ${f.borrowerType===b.type&&f.borrowerId===b.id?'selected':''}>${b.name}</option>`).join('')}</select></div>
+        <div class="row-3"><div class="form-group"><label>Limit</label><input type="number" value="${f.limit||''}" placeholder="0" onchange="updateFacility(${f.id},'limit',parseFloat(this.value)||0)"></div><div class="form-group"><label>Rate %</label><input type="number" value="${f.rate||''}" step="0.1" onchange="updateFacility(${f.id},'rate',parseFloat(this.value)||0)"></div><div class="form-group"><label>Term</label><input type="number" value="${f.term||30}" min="1" max="30" onchange="updateFacility(${f.id},'term',parseInt(this.value)||30)"></div></div>
+        <div class="form-group"><label>Type</label><div class="chips"><span class="chip ${f.type==='pi'?'active':''}" onclick="updateFacility(${f.id},'type','pi')">P&I</span><span class="chip ${f.type==='io'?'active':''}" onclick="updateFacility(${f.id},'type','io')">I/O</span></div></div>
+        <div class="form-group"><label>Secured By</label><select onchange="updateFacility(${f.id},'securityId',parseInt(this.value)||null)"><option value="">Unsecured</option>${data.securities.map(s => `<option value="${s.id}" ${f.securityId===s.id?'selected':''}>${s.address || 'Property ' + s.id}</option>`).join('')}</select></div>
+        <div class="mini-metrics"><div class="mini-metric"><div class="mini-metric-label">P&I/mo</div><div class="mini-metric-value negative">-${fmt(monthlyPI)}</div></div><div class="mini-metric"><div class="mini-metric-label">I/O/mo</div><div class="mini-metric-value negative">-${fmt(monthlyIO)}</div></div><div class="mini-metric"><div class="mini-metric-label">Annual Int</div><div class="mini-metric-value negative">-${fmt(monthlyIO*12)}</div></div></div>
       </div>`;
     }).join('');
   }
   
+  function renderSecuritiesTab() {
+    const c = document.getElementById('securitiesContainer');
+    if (data.securities.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:20px;">No securities</p>'; return; }
+    c.innerHTML = data.securities.map(s => {
+      const debtOnSecurity = data.facilities.filter(f => f.securityId === s.id).reduce((sum, f) => sum + (f.limit || 0), 0);
+      const lvr = s.value > 0 ? ((debtOnSecurity / s.value) * 100).toFixed(1) : 0;
+      const maxLVR = PROPERTY_TYPES[s.type]?.maxLVR || 80;
+      const lvrClass = lvr > maxLVR ? 'negative' : lvr > maxLVR - 10 ? 'neutral' : 'positive';
+      
+      return `<div class="entity-card security">
+        <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge security">SEC</span><input type="text" value="${s.address||''}" placeholder="Address..." onchange="updateSecurity(${s.id},'address',this.value)" style="border:none;background:transparent;font-weight:600;font-size:12px;width:150px;color:var(--text);"></div><button class="remove-btn" onclick="removeSecurity(${s.id})">×</button></div>
+        <div class="row"><div class="form-group"><label>Type</label><select onchange="updateSecurity(${s.id},'type',this.value)">${Object.entries(PROPERTY_TYPES).map(([k, v]) => `<option value="${k}" ${s.type===k?'selected':''}>${v.label}</option>`).join('')}</select></div><div class="form-group"><label>Value</label><input type="number" value="${s.value||''}" placeholder="0" onchange="updateSecurity(${s.id},'value',parseFloat(this.value)||0)"></div></div>
+        <div class="form-group"><label>Has Rental Income?</label><div class="chips"><span class="chip ${s.hasIncome?'active':''}" onclick="updateSecurity(${s.id},'hasIncome',true)">Yes</span><span class="chip ${!s.hasIncome?'active':''}" onclick="updateSecurity(${s.id},'hasIncome',false)">No</span></div></div>
+        ${s.hasIncome ? `<div class="form-group"><label>Gross Rent (p.a.)</label><input type="number" value="${s.grossRent||''}" placeholder="0" onchange="updateSecurity(${s.id},'grossRent',parseFloat(this.value)||0)"></div>` : ''}
+        <div class="mini-metrics"><div class="mini-metric"><div class="mini-metric-label">Value</div><div class="mini-metric-value neutral">${fmt(s.value)}</div></div><div class="mini-metric"><div class="mini-metric-label">Debt</div><div class="mini-metric-value negative">${fmt(debtOnSecurity)}</div></div><div class="mini-metric"><div class="mini-metric-label">LVR</div><div class="mini-metric-value ${lvrClass}">${lvr}%</div></div></div>
+      </div>`;
+    }).join('');
+    
+    // Update totals
+    const totalValue = data.securities.reduce((s, x) => s + (x.value || 0), 0);
+    const totalDebt = data.facilities.reduce((s, f) => s + (f.limit || 0), 0);
+    const blendedLVR = totalValue > 0 ? ((totalDebt / totalValue) * 100).toFixed(1) : 0;
+    document.getElementById('totalSecurityValue').textContent = fmt(totalValue);
+    document.getElementById('totalDebtValue').textContent = fmt(totalDebt);
+    document.getElementById('blendedLVR').textContent = blendedLVR + '%';
+    document.getElementById('blendedLVR').style.color = blendedLVR > 80 ? 'var(--danger)' : blendedLVR > 70 ? 'var(--warning)' : 'var(--success)';
+  }
+  
   function renderIncomeTab() {
-    // Business Income
-    const bizContainer = document.getElementById('businessIncomeContainer');
-    if (data.companies.length === 0) {
-      bizContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add business entities first</p>';
-    } else {
-      bizContainer.innerHTML = data.companies.map(c => {
-        const { annualDebtService, annualInterest } = getCompanyDebtService(c.id);
-        const icr = annualInterest > 0 ? ((c.ebitda || 0) / annualInterest).toFixed(2) + 'x' : 'N/A';
-        const dscr = annualDebtService > 0 ? ((c.ebitda || 0) / annualDebtService).toFixed(2) + 'x' : 'N/A';
-        const totalHolding = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
-        const distribution = Math.min(Math.max(c.distribution || 0, 0), Math.max(c.ebitda || 0, 0));
-        const isLoss = (c.ebitda || 0) < 0;
-        
-        const distributions = c.holders.map(h => {
-          const share = totalHolding > 0 ? (distribution * (h.percentage || 0) / totalHolding) : 0;
-          const ind = data.individuals.find(i => i.id === h.entityId);
-          return { name: ind ? ind.name : (h.entityId === 'other' ? 'External' : 'Unknown'), percentage: h.percentage || 0, amount: share };
-        });
+    // Business
+    const bc = document.getElementById('businessIncomeContainer');
+    if (data.companies.length === 0) { bc.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:20px;">Add businesses first</p>'; }
+    else {
+      bc.innerHTML = data.companies.map(co => {
+        const { annualDebtService, annualInterest } = getCompanyDebtService(co.id);
+        const icr = annualInterest > 0 ? ((co.ebitda || 0) / annualInterest).toFixed(2) + 'x' : '—';
+        const dscr = annualDebtService > 0 ? ((co.ebitda || 0) / annualDebtService).toFixed(2) + 'x' : '—';
+        const isLoss = (co.ebitda || 0) < 0;
+        const total = co.holders.reduce((s, h) => s + (parseFloat(h.percentage) || 0), 0);
+        const dist = Math.min(Math.max(co.distribution || 0, 0), Math.max(co.ebitda || 0, 0));
         
         return `<div class="entity-card company">
-          <div class="entity-card-header">
-            <div class="entity-card-title"><span class="entity-type-badge company">${c.type === 'trust' ? 'TRUST' : c.type === 'partnership' ? 'P/SHIP' : 'CO'}</span>${c.name}</div>
-          </div>
-          <div class="row">
-            <div class="form-group">
-              <label>EBITDA (Annual) <span style="font-size:9px; color:var(--muted);">💡 Negative = Loss</span></label>
-              <input type="number" value="${c.ebitda !== undefined ? c.ebitda : ''}" placeholder="0" onchange="updateCompany(${c.id}, 'ebitda', parseFloat(this.value))" style="${isLoss ? 'border-color:var(--danger); background:var(--danger-light);' : ''}">
-              ${isLoss ? '<div style="color:var(--danger); font-size:10px; margin-top:2px;">⚠️ Business operating at a loss</div>' : ''}
-            </div>
-            <div class="form-group">
-              <label>Annual Debt Service (P&I)</label>
-              <input type="number" value="${Math.round(annualDebtService)}" readonly>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Distribution to Holders (Annual)</label>
-            <input type="number" value="${c.distribution || ''}" placeholder="0" ${isLoss ? 'disabled' : ''} onchange="updateCompany(${c.id}, 'distribution', parseFloat(this.value) || 0)">
-            <div class="helper">${isLoss ? '⚠️ Cannot distribute when at a loss' : 'Max: ' + fmt(Math.max(c.ebitda || 0, 0))}</div>
-          </div>
-          ${distributions.length > 0 && distribution > 0 ? `<div style="margin-top:8px;"><div style="font-size:10px; color:var(--muted); margin-bottom:6px;">Distribution Breakdown:</div>
-            ${distributions.map(d => `<div class="distribution-row"><span class="name">${d.name}</span><span class="percent">${d.percentage.toFixed(0)}%</span><span class="amount">${fmt(d.amount)}</span></div>`).join('')}</div>` : ''}
-          <div class="mini-metrics">
-            <div class="mini-metric" title="Interest Cover = EBITDA ÷ Interest"><div class="mini-metric-label">ICR ℹ️</div><div class="mini-metric-value ${getICRClass(c.ebitda, annualInterest)}">${icr}</div></div>
-            <div class="mini-metric" title="Debt Service Cover = EBITDA ÷ P&I"><div class="mini-metric-label">DSCR ℹ️</div><div class="mini-metric-value ${getDSCRClass(c.ebitda, annualDebtService)}">${dscr}</div></div>
-            <div class="mini-metric"><div class="mini-metric-label">Monthly</div><div class="mini-metric-value ${isLoss ? 'negative' : 'neutral'}">${fmt((c.ebitda || 0) / 12)}</div></div>
-          </div>
+          <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge company">${co.type === 'trust' ? 'TRUST' : 'CO'}</span>${co.name}</div></div>
+          <div class="row"><div class="form-group"><label>EBITDA <span style="font-size:9px;color:var(--muted);">💡-ve=loss</span></label><input type="number" value="${co.ebitda!==undefined?co.ebitda:''}" onchange="updateCompany(${co.id},'ebitda',parseFloat(this.value))" style="${isLoss?'border-color:var(--danger);':''}">${isLoss?'<div style="color:var(--danger);font-size:10px;">⚠️ Loss</div>':''}</div><div class="form-group"><label>Debt Service</label><input type="number" value="${Math.round(annualDebtService)}" readonly></div></div>
+          <div class="form-group"><label>Distribution</label><input type="number" value="${co.distribution||''}" ${isLoss?'disabled':''} onchange="updateCompany(${co.id},'distribution',parseFloat(this.value)||0)"><div class="helper">${isLoss?'Cannot distribute at loss':'Max: '+fmt(Math.max(co.ebitda||0,0))}</div></div>
+          ${co.holders.length > 0 && dist > 0 ? `<div style="margin-top:6px;">${co.holders.map(h => { const ind = data.individuals.find(x => x.id === h.entityId); const share = total > 0 ? dist * (h.percentage || 0) / total : 0; return `<div class="distribution-row"><span class="name">${ind ? ind.name : 'Ext'}</span><span class="percent">${(h.percentage||0).toFixed(0)}%</span><span class="amount">${fmt(share)}</span></div>`; }).join('')}</div>` : ''}
+          <div class="mini-metrics"><div class="mini-metric"><div class="mini-metric-label">ICR</div><div class="mini-metric-value ${getMetricClass(annualInterest > 0 ? (co.ebitda||0)/annualInterest : 99, 1.5, 1.0)}">${icr}</div></div><div class="mini-metric"><div class="mini-metric-label">DSCR</div><div class="mini-metric-value ${getMetricClass(annualDebtService > 0 ? (co.ebitda||0)/annualDebtService : 99, 1.25, 1.0)}">${dscr}</div></div><div class="mini-metric"><div class="mini-metric-label">Monthly</div><div class="mini-metric-value ${isLoss?'negative':'neutral'}">${fmt((co.ebitda||0)/12)}</div></div></div>
         </div>`;
       }).join('');
     }
     
-    // Rental Income (Standard+)
-    const rentalContainer = document.getElementById('rentalIncomeContainer');
-    if (data.tier === 'lite') {
-      rentalContainer.innerHTML = `<div class="locked-feature" style="padding:20px; text-align:center;"><p>🔒 Rental Income requires Standard license</p><button class="btn btn-info btn-sm" onclick="showUpgradeModal()">Upgrade</button></div>`;
-    } else if (data.individuals.length === 0) {
-      rentalContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals first</p>';
-    } else {
-      const shading = data.settings.rentalShading / 100;
-      rentalContainer.innerHTML = data.individuals.map(i => {
+    // Rental (Standard+)
+    const rc = document.getElementById('rentalIncomeContainer');
+    if (data.tier === 'lite') { rc.innerHTML = '<div style="padding:16px;text-align:center;color:var(--muted);">🔒 Standard+</div>'; }
+    else if (data.individuals.length === 0) { rc.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:16px;">Add individuals first</p>'; }
+    else {
+      const shade = data.settings.rentalShading / 100;
+      rc.innerHTML = data.individuals.map(i => {
         const gross = i.rentalIncome || 0;
-        const expenses = i.rentalExpenses || 0;
-        const vacancy = i.vacancyRate || 5;
-        const net = (gross - expenses) * (1 - vacancy/100) * shading;
-        
+        const exp = i.rentalExpenses || 0;
+        const vac = i.vacancyRate || 5;
+        const net = (gross - exp) * (1 - vac/100) * shade;
         return `<div class="entity-card individual">
-          <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge individual">IND</span>${i.name}</div></div>
-          <div class="row-3">
-            <div class="form-group"><label>Gross Rental (p.a.)</label><input type="number" value="${gross || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'rentalIncome', parseFloat(this.value) || 0)"></div>
-            <div class="form-group"><label>Expenses (p.a.)</label><input type="number" value="${expenses || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'rentalExpenses', parseFloat(this.value) || 0)"></div>
-            <div class="form-group"><label>Vacancy %</label><input type="number" value="${vacancy}" min="0" max="20" onchange="updateIndividual(${i.id}, 'vacancyRate', parseFloat(this.value) || 0)"></div>
-          </div>
-          <div style="background:var(--bg); padding:8px; border-radius:6px; font-size:11px; margin-top:8px;">
-            Net Assessable: <strong style="color:var(--success);">${fmt(net)}/yr</strong> (${data.settings.rentalShading}% shading)
-          </div>
+          <div class="entity-card-header"><div class="entity-card-title">${i.name}</div></div>
+          <div class="row-3"><div class="form-group"><label>Gross (pa)</label><input type="number" value="${gross||''}" onchange="updateIndividual(${i.id},'rentalIncome',parseFloat(this.value)||0)"></div><div class="form-group"><label>Expenses</label><input type="number" value="${exp||''}" onchange="updateIndividual(${i.id},'rentalExpenses',parseFloat(this.value)||0)"></div><div class="form-group"><label>Vacancy%</label><input type="number" value="${vac}" min="0" max="20" onchange="updateIndividual(${i.id},'vacancyRate',parseFloat(this.value)||0)"></div></div>
+          <div style="background:var(--bg);padding:6px;border-radius:4px;font-size:11px;margin-top:6px;">Net: <strong style="color:var(--success);">${fmt(net)}/yr</strong> (${data.settings.rentalShading}% shade)</div>
         </div>`;
       }).join('');
     }
     
-    // Individual Income
-    const indContainer = document.getElementById('individualIncomeContainer');
-    if (data.individuals.length === 0) {
-      indContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals first</p>';
-    } else {
-      indContainer.innerHTML = data.individuals.map(i => `<div class="entity-card individual">
-        <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge individual">IND</span>${i.name}</div></div>
-        <div class="form-group">
-          <label>Personal Income Type</label>
-          <select onchange="updateIndividual(${i.id}, 'incomeType', this.value); renderIncomeTab();">
-            <option value="none" ${i.incomeType === 'none' ? 'selected' : ''}>No personal income</option>
-            <option value="payg" ${i.incomeType === 'payg' ? 'selected' : ''}>PAYG Employment</option>
-            <option value="self" ${i.incomeType === 'self' ? 'selected' : ''}>Self-Employed</option>
-            <option value="other" ${i.incomeType === 'other' ? 'selected' : ''}>Other Income</option>
-          </select>
-        </div>
-        ${i.incomeType !== 'none' ? `<div class="form-group"><label>Annual Income</label><input type="number" value="${i.income || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'income', parseFloat(this.value) || 0)">
-          ${i.incomeType === 'self' ? `<div class="helper">Shaded at ${data.settings.incomeShading}%</div>` : ''}</div>` : ''}
-        <div class="helper">Business distributions shown in Business Income section above.</div>
+    // Personal
+    const ic = document.getElementById('individualIncomeContainer');
+    if (data.individuals.length === 0) { ic.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:16px;">Add individuals first</p>'; }
+    else {
+      ic.innerHTML = data.individuals.map(i => `<div class="entity-card individual">
+        <div class="entity-card-header"><div class="entity-card-title">${i.name}</div></div>
+        <div class="form-group"><label>Income Type</label><select onchange="updateIndividual(${i.id},'incomeType',this.value)"><option value="none" ${i.incomeType==='none'?'selected':''}>None</option><option value="payg" ${i.incomeType==='payg'?'selected':''}>PAYG</option><option value="self" ${i.incomeType==='self'?'selected':''}>Self-Employed</option><option value="other" ${i.incomeType==='other'?'selected':''}>Other</option></select></div>
+        ${i.incomeType !== 'none' ? `<div class="form-group"><label>Annual Income</label><input type="number" value="${i.income||''}" onchange="updateIndividual(${i.id},'income',parseFloat(this.value)||0)">${i.incomeType==='self'?`<div class="helper">Shaded at ${data.settings.incomeShading}%</div>`:''}</div>` : ''}
       </div>`).join('');
     }
   }
   
   function renderExpensesTab() {
-    const container = document.getElementById('expensesContainer');
-    if (data.individuals.length === 0) { container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals first</p>'; return; }
-    
-    container.innerHTML = data.individuals.map(i => {
+    const c = document.getElementById('expensesContainer');
+    if (data.individuals.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:20px;">Add individuals first</p>'; return; }
+    c.innerHTML = data.individuals.map(i => {
       const hem = calcHEM(i);
-      const usedExpenses = Math.max(i.expenses || 0, hem);
-      
+      const used = Math.max(i.expenses || 0, hem);
       return `<div class="entity-card individual">
-        <div class="entity-card-header"><div class="entity-card-title"><span class="entity-type-badge individual">IND</span>${i.name}</div></div>
-        <div class="row">
-          <div class="form-group"><label>Dependents</label>
-            <select onchange="updateIndividual(${i.id}, 'dependents', parseInt(this.value)); renderExpensesTab();">
-              ${[0,1,2,3,4].map(n => `<option value="${n}" ${i.dependents === n ? 'selected' : ''}>${n}${n===4?'+':''}</option>`).join('')}
-            </select>
-          </div>
-          <div class="form-group"><label>Declared Expenses (Monthly)</label><input type="number" value="${i.expenses || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'expenses', parseFloat(this.value) || 0); renderExpensesTab();"></div>
-        </div>
-        <div style="background:var(--bg); padding:8px 10px; border-radius:6px; margin:8px 0; font-size:11px;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:var(--muted);">HEM (2024):</span><span style="font-weight:600;">${fmt(hem)}/mo</span></div>
-          <div style="display:flex; justify-content:space-between;"><span style="color:var(--muted);">Used for Assessment:</span><span style="font-weight:600; color:${usedExpenses === hem ? 'var(--warning)' : 'var(--navy)'};">${fmt(usedExpenses)}/mo ${usedExpenses === hem ? '(HEM floor)' : ''}</span></div>
-          <div style="font-size:9px; color:var(--muted); margin-top:4px;">💡 Based on Melbourne Institute / Westpac 2024 benchmarks</div>
-        </div>
-        <div class="row">
-          <div class="form-group"><label>Credit Card Limits</label><input type="number" value="${i.creditCards || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'creditCards', parseFloat(this.value) || 0)"><div class="helper">Assessed at 3% of limit</div></div>
-          <div class="form-group"><label>Existing Debt (Monthly)</label><input type="number" value="${i.existingDebt || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'existingDebt', parseFloat(this.value) || 0)"></div>
-        </div>
+        <div class="entity-card-header"><div class="entity-card-title">${i.name}</div></div>
+        <div class="row"><div class="form-group"><label>Dependents</label><select onchange="updateIndividual(${i.id},'dependents',parseInt(this.value))">${[0,1,2,3,4].map(n => `<option value="${n}" ${i.dependents===n?'selected':''}>${n}${n===4?'+':''}</option>`).join('')}</select></div><div class="form-group"><label>Expenses/mo</label><input type="number" value="${i.expenses||''}" onchange="updateIndividual(${i.id},'expenses',parseFloat(this.value)||0)"></div></div>
+        <div style="background:var(--bg);padding:8px;border-radius:4px;font-size:11px;margin:8px 0;"><div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">HEM:</span><span>${fmt(hem)}/mo</span></div><div style="display:flex;justify-content:space-between;margin-top:4px;"><span style="color:var(--muted);">Used:</span><span style="font-weight:600;color:${used===hem?'var(--warning)':'var(--navy)'};">${fmt(used)}/mo ${used===hem?'(HEM)':''}</span></div></div>
+        <div class="row"><div class="form-group"><label>Credit Cards</label><input type="number" value="${i.creditCards||''}" onchange="updateIndividual(${i.id},'creditCards',parseFloat(this.value)||0)"><div class="helper">3% of limit</div></div><div class="form-group"><label>Existing Debt/mo</label><input type="number" value="${i.existingDebt||''}" onchange="updateIndividual(${i.id},'existingDebt',parseFloat(this.value)||0)"></div></div>
       </div>`;
     }).join('');
   }
   
   function renderLenderPresets() {
-    const container = document.getElementById('lenderPresetsContainer');
-    container.innerHTML = Object.entries(LENDER_PRESETS).map(([key, preset]) => 
-      `<div class="lender-preset ${data.settings.lenderPreset === key ? 'active' : ''}" onclick="applyLenderPreset('${key}')">
-        <div class="lender-preset-name">${preset.name}</div>
-        <div class="lender-preset-details">Buffer: ${preset.buffer}% | Income: ${preset.incomeShading}% | DTI: ${preset.maxDTI}x</div>
-      </div>`
-    ).join('');
+    document.getElementById('lenderPresetsContainer').innerHTML = Object.entries(LENDER_PRESETS).map(([k, p]) => `<div class="lender-preset ${data.settings.lenderPreset===k?'active':''}" onclick="applyLenderPreset('${k}')"><div class="lender-preset-name">${p.name}</div><div class="lender-preset-details">Buf: ${p.buffer}% | Inc: ${p.incomeShading}% | DTI: ${p.maxDTI}x</div></div>`).join('');
   }
   
-  function applyLenderPreset(key) {
-    const preset = LENDER_PRESETS[key];
-    if (!preset) return;
-    
-    data.settings.lenderPreset = key;
-    data.settings.bufferRate = preset.buffer;
-    data.settings.incomeShading = preset.incomeShading;
-    data.settings.rentalShading = preset.rentalShading;
-    
-    document.getElementById('bufferRate').value = preset.buffer;
-    document.getElementById('incomeShading').value = preset.incomeShading;
-    document.getElementById('rentalShading').value = preset.rentalShading;
-    
+  function applyLenderPreset(k) {
+    const p = LENDER_PRESETS[k]; if (!p) return;
+    data.settings.lenderPreset = k;
+    data.settings.bufferRate = p.buffer;
+    data.settings.incomeShading = p.incomeShading;
+    data.settings.rentalShading = p.rentalShading;
+    document.getElementById('bufferRate').value = p.buffer;
+    document.getElementById('incomeShading').value = p.incomeShading;
+    document.getElementById('rentalShading').value = p.rentalShading;
     renderLenderPresets();
     calculate();
   }
   
-  // ===== SCENARIO MANAGEMENT =====
+  // ===== SCENARIOS =====
   function saveScenario() {
     const name = prompt('Scenario name:', `Scenario ${scenarios.length + 1}`);
     if (!name) return;
-    
-    scenarios.push({
-      id: Date.now(),
-      name,
-      timestamp: new Date().toISOString(),
-      data: JSON.parse(JSON.stringify(data)),
-      metrics: getCurrentMetrics()
-    });
-    
-    saveToLocalStorage();
+    scenarios.push({ id: Date.now(), name, timestamp: new Date().toISOString(), data: JSON.parse(JSON.stringify(data)), metrics: getCurrentMetrics() });
+    saveToStorage();
     renderScenarios();
   }
   
-  function loadScenario(id) {
-    const scenario = scenarios.find(s => s.id === id);
-    if (!scenario) return;
-    
-    data = JSON.parse(JSON.stringify(scenario.data));
-    renderAll();
-    calculate();
-  }
-  
-  function deleteScenario(id) {
-    scenarios = scenarios.filter(s => s.id !== id);
-    saveToLocalStorage();
-    renderScenarios();
-  }
-  
-  function clearScenarios() {
-    if (confirm('Delete all saved scenarios?')) {
-      scenarios = [];
-      saveToLocalStorage();
-      renderScenarios();
-    }
-  }
+  function loadScenario(id) { const s = scenarios.find(x => x.id === id); if (s) { data = JSON.parse(JSON.stringify(s.data)); renderAll(); } }
+  function deleteScenario(id) { scenarios = scenarios.filter(x => x.id !== id); saveToStorage(); renderScenarios(); }
+  function clearScenarios() { if (confirm('Delete all?')) { scenarios = []; saveToStorage(); renderScenarios(); } }
+  function exportScenarios() { const blob = new Blob([JSON.stringify({ data, scenarios }, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `oney-servicing-${Date.now()}.json`; a.click(); }
   
   function renderScenarios() {
-    const container = document.getElementById('scenariosContainer');
-    if (scenarios.length === 0) {
-      container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">No saved scenarios</p>';
-    } else {
-      container.innerHTML = scenarios.map(s => `<div class="scenario-card" onclick="loadScenario(${s.id})">
-        <div class="scenario-header">
-          <span class="scenario-name">${s.name}</span>
-          <button class="remove-btn" onclick="event.stopPropagation(); deleteScenario(${s.id})">×</button>
-        </div>
-        <div class="scenario-meta">
-          Capacity: ${fmt(s.metrics?.capacity || 0)} | Surplus: ${fmt(s.metrics?.surplus || 0)} | ${new Date(s.timestamp).toLocaleDateString()}
-        </div>
-      </div>`).join('');
-    }
+    const c = document.getElementById('scenariosContainer');
+    if (scenarios.length === 0) { c.innerHTML = '<p style="color:var(--muted);font-size:11px;text-align:center;padding:20px;">No scenarios</p>'; }
+    else { c.innerHTML = scenarios.map(s => `<div class="scenario-card" onclick="loadScenario(${s.id})"><div class="scenario-header"><span class="scenario-name">${s.name}</span><button class="remove-btn" onclick="event.stopPropagation();deleteScenario(${s.id})">×</button></div><div class="scenario-meta">Cap: ${fmt(s.metrics?.capacity||0)} | Sur: ${fmt(s.metrics?.surplus||0)} | ${new Date(s.timestamp).toLocaleDateString()}</div></div>`).join(''); }
     
-    // Comparison table
-    const compContainer = document.getElementById('scenarioComparisonContainer');
+    const cc = document.getElementById('scenarioComparisonContainer');
     if (scenarios.length >= 2 && data.tier !== 'lite') {
-      compContainer.innerHTML = `<table class="breakdown-table"><thead><tr><th>Scenario</th><th class="amount">Capacity</th><th class="amount">Surplus</th><th class="amount">DSCR</th><th class="amount">DTI</th></tr></thead>
-        <tbody>${scenarios.slice(0, 5).map(s => `<tr><td>${s.name}</td><td class="amount">${fmt(s.metrics?.capacity || 0)}</td><td class="amount">${fmt(s.metrics?.surplus || 0)}</td><td class="amount">${s.metrics?.dscr || '—'}</td><td class="amount">${s.metrics?.dti || '—'}</td></tr>`).join('')}</tbody></table>`;
-    } else if (data.tier === 'lite') {
-      compContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px;">🔒 Scenario comparison requires Standard+</p>';
-    } else {
-      compContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px;">Save 2+ scenarios to compare</p>';
-    }
+      cc.innerHTML = `<table class="breakdown-table"><thead><tr><th>Scenario</th><th class="amount">Capacity</th><th class="amount">Surplus</th><th class="amount">DSCR</th><th class="amount">LVR</th></tr></thead><tbody>${scenarios.slice(0,5).map(s => `<tr><td>${s.name}</td><td class="amount">${fmt(s.metrics?.capacity||0)}</td><td class="amount">${fmt(s.metrics?.surplus||0)}</td><td class="amount">${s.metrics?.dscr||'—'}</td><td class="amount">${s.metrics?.lvr||'—'}</td></tr>`).join('')}</tbody></table>`;
+    } else if (data.tier === 'lite') { cc.innerHTML = '<p style="color:var(--muted);font-size:11px;">🔒 Standard+</p>'; }
+    else { cc.innerHTML = '<p style="color:var(--muted);font-size:11px;">Save 2+ to compare</p>'; }
   }
   
   function getCurrentMetrics() {
-    const surplus = parseFloat(document.getElementById('metricSurplus').textContent.replace(/[^0-9.-]/g, '')) || 0;
-    const capacity = parseFloat(document.getElementById('metricCapacity').textContent.replace(/[^0-9.-]/g, '')) || 0;
     return {
-      surplus,
-      capacity,
+      surplus: parseFloat(document.getElementById('metricSurplus').textContent.replace(/[^0-9.-]/g,'')) || 0,
+      capacity: parseFloat(document.getElementById('metricCapacity').textContent.replace(/[^0-9.-]/g,'')) || 0,
       dscr: document.getElementById('metricDSCR').textContent,
+      lvr: document.getElementById('metricLVR').textContent,
       dti: document.getElementById('metricDTI').textContent
     };
   }
@@ -1044,364 +955,289 @@
   function calcFacilityPayments(f) {
     const limit = f.limit || 0;
     const rate = (f.rate || 7) / 100;
-    const buffer = (parseFloat(document.getElementById('bufferRate').value) || 3) / 100;
-    const assessmentRate = rate + buffer;
+    const buffer = (parseFloat(document.getElementById('bufferRate')?.value) || 3) / 100;
+    const aRate = rate + buffer;
     const term = f.term || 30;
-    
-    const monthlyIO = limit * assessmentRate / 12;
-    
-    // Precise P&I amortisation formula
-    const r = assessmentRate / 12;
+    const monthlyIO = limit * aRate / 12;
+    const r = aRate / 12;
     const n = term * 12;
-    const monthlyPI = limit > 0 ? limit * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : 0;
-    
+    const monthlyPI = limit > 0 ? limit * (r * Math.pow(1+r, n)) / (Math.pow(1+r, n) - 1) : 0;
     return { monthlyPI, monthlyIO, annualPI: monthlyPI * 12, annualIO: monthlyIO * 12 };
   }
   
-  function getCompanyDebtService(companyId) {
-    let annualDebtService = 0;
-    let annualInterest = 0;
-    
-    data.facilities.filter(f => f.borrowerType === 'company' && f.borrowerId === companyId).forEach(f => {
+  function getCompanyDebtService(cid) {
+    let ads = 0, ai = 0;
+    data.facilities.filter(f => f.borrowerType === 'company' && f.borrowerId === cid).forEach(f => {
       const { annualPI, annualIO } = calcFacilityPayments(f);
-      annualDebtService += f.type === 'io' ? annualIO : annualPI;
-      annualInterest += annualIO;
+      ads += f.type === 'io' ? annualIO : annualPI;
+      ai += annualIO;
     });
-    
-    return { annualDebtService, annualInterest };
+    return { annualDebtService: ads, annualInterest: ai };
   }
   
-  function getIndividualDebtService(individualId) {
-    let monthlyDebt = 0;
-    
-    data.facilities.filter(f => f.borrowerType === 'individual' && f.borrowerId === individualId).forEach(f => {
+  function getIndividualDebtService(iid) {
+    let m = 0;
+    data.facilities.filter(f => f.borrowerType === 'individual' && f.borrowerId === iid).forEach(f => {
       const { monthlyPI, monthlyIO } = calcFacilityPayments(f);
-      monthlyDebt += f.type === 'io' ? monthlyIO : monthlyPI;
+      m += f.type === 'io' ? monthlyIO : monthlyPI;
     });
-    
-    return monthlyDebt;
+    return m;
   }
   
-  function calcHEM(individual) {
-    const hem = HEM[data.settings.hemLocation];
-    const base = hem.single;
-    return base + ((individual.dependents || 0) * hem.perDependent);
-  }
-  
-  function getICRClass(ebitda, interest) { if (!interest || interest === 0) return 'neutral'; const icr = (ebitda || 0) / interest; if (icr >= 1.5) return 'positive'; if (icr >= 1.0) return 'neutral'; return 'negative'; }
-  function getDSCRClass(ebitda, debtService) { if (!debtService || debtService === 0) return 'neutral'; const dscr = (ebitda || 0) / debtService; if (dscr >= 1.25) return 'positive'; if (dscr >= 1.0) return 'neutral'; return 'negative'; }
-  function fmt(num) { if (isNaN(num)) return '$0'; const absNum = Math.abs(Math.round(num)); const formatted = '$' + absNum.toLocaleString(); return num < 0 ? '-' + formatted : formatted; }
+  function calcHEM(i) { const h = HEM[data.settings.hemLocation]; return h.single + ((i.dependents || 0) * h.perDep); }
+  function getMetricClass(v, good, min) { if (v >= good) return 'positive'; if (v >= min) return 'neutral'; return 'negative'; }
+  function fmt(n) { if (isNaN(n)) return '$0'; const abs = Math.abs(Math.round(n)); return (n < 0 ? '-' : '') + '$' + abs.toLocaleString(); }
   
   // ===== MAIN CALCULATION =====
   function calculate() {
-    const incomeShading = data.settings.incomeShading / 100;
-    const rentalShading = data.settings.rentalShading / 100;
+    const incShade = (data.settings.incomeShading || 80) / 100;
+    const rentShade = (data.settings.rentalShading || 80) / 100;
     
-    let totalBusinessIncome = 0;
-    let totalRentalIncome = 0;
-    let totalPersonalIncome = 0;
-    let totalAnnualDebtService = 0;
-    let totalAnnualInterest = 0;
-    const individualIncome = {};
-    const distributedIncome = {};
+    let totalBizIncome = 0, totalRentalIncome = 0, totalPersonalIncome = 0, totalADS = 0, totalAI = 0;
+    const indIncome = {}, distIncome = {};
     
-    data.individuals.forEach(i => {
-      individualIncome[i.id] = 0;
-      distributedIncome[i.id] = 0;
-      
-      // Personal income
-      if (i.incomeType !== 'none' && i.income > 0) {
-        const shaded = i.incomeType === 'self' ? i.income * incomeShading : i.income;
-        individualIncome[i.id] += shaded;
-        totalPersonalIncome += shaded;
-      }
-      
-      // Rental income (Standard+)
-      if (data.tier !== 'lite' && i.rentalIncome > 0) {
-        const gross = i.rentalIncome || 0;
-        const expenses = i.rentalExpenses || 0;
-        const vacancy = i.vacancyRate || 5;
-        const netRental = (gross - expenses) * (1 - vacancy/100) * rentalShading;
-        individualIncome[i.id] += netRental;
-        totalRentalIncome += netRental;
-      }
+    data.individuals.forEach(i => { indIncome[i.id] = 0; distIncome[i.id] = 0;
+      if (i.incomeType !== 'none' && i.income > 0) { const shaded = i.incomeType === 'self' ? i.income * incShade : i.income; indIncome[i.id] += shaded; totalPersonalIncome += shaded; }
+      if (data.tier !== 'lite' && i.rentalIncome > 0) { const net = (i.rentalIncome - (i.rentalExpenses||0)) * (1 - (i.vacancyRate||5)/100) * rentShade; indIncome[i.id] += net; totalRentalIncome += net; }
     });
     
-    // Business income & distributions
-    data.companies.forEach(c => {
-      const ebitda = c.ebitda || 0;
-      if (ebitda > 0) totalBusinessIncome += ebitda;
-      
-      const { annualDebtService, annualInterest } = getCompanyDebtService(c.id);
-      totalAnnualDebtService += annualDebtService;
-      totalAnnualInterest += annualInterest;
-      
-      const distribution = Math.min(Math.max(c.distribution || 0, 0), Math.max(ebitda, 0));
-      const totalHolding = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
-      
-      c.holders.forEach(h => {
-        const entityId = parseInt(h.entityId);
-        const percentage = parseFloat(h.percentage) || 0;
-        if (entityId && !isNaN(entityId) && percentage > 0 && totalHolding > 0) {
-          const share = distribution * (percentage / totalHolding);
-          individualIncome[entityId] = (individualIncome[entityId] || 0) + share;
-          distributedIncome[entityId] = (distributedIncome[entityId] || 0) + share;
-        }
+    // Security rental income
+    if (data.tier !== 'lite') {
+      data.securities.filter(s => s.hasIncome && s.grossRent > 0).forEach(s => {
+        const net = s.grossRent * 0.8 * rentShade; // 80% net, then shading
+        totalRentalIncome += net;
+      });
+    }
+    
+    data.companies.forEach(co => {
+      const ebitda = co.ebitda || 0;
+      if (ebitda > 0) totalBizIncome += ebitda;
+      const { annualDebtService, annualInterest } = getCompanyDebtService(co.id);
+      totalADS += annualDebtService;
+      totalAI += annualInterest;
+      const dist = Math.min(Math.max(co.distribution || 0, 0), Math.max(ebitda, 0));
+      const total = co.holders.reduce((s, h) => s + (parseFloat(h.percentage) || 0), 0);
+      co.holders.forEach(h => { const eid = parseInt(h.entityId); const pct = parseFloat(h.percentage) || 0;
+        if (eid && !isNaN(eid) && pct > 0 && total > 0) { const share = dist * (pct / total); indIncome[eid] = (indIncome[eid] || 0) + share; distIncome[eid] = (distIncome[eid] || 0) + share; }
       });
     });
     
-    // Expenses & debt
-    let totalExpenses = 0;
-    let totalExistingDebt = 0;
-    
+    let totalExp = 0, totalExDebt = 0;
     data.individuals.forEach(i => {
       const hem = calcHEM(i);
-      totalExpenses += Math.max(i.expenses || 0, hem);
-      totalExistingDebt += (i.existingDebt || 0) + (i.creditCards || 0) * 0.03;
-      totalExistingDebt += getIndividualDebtService(i.id);
+      totalExp += Math.max(i.expenses || 0, hem);
+      totalExDebt += (i.existingDebt || 0) + (i.creditCards || 0) * 0.03;
+      totalExDebt += getIndividualDebtService(i.id);
     });
     
-    // Monthly totals
-    const monthlyBusinessIncome = totalBusinessIncome / 12;
-    const monthlyRentalIncome = totalRentalIncome / 12;
-    const monthlyPersonalIncome = (totalPersonalIncome + Object.values(distributedIncome).reduce((a, b) => a + b, 0)) / 12;
-    const monthlyExpenses = totalExpenses;
-    const monthlyDebt = totalExistingDebt + (totalAnnualDebtService / 12);
-    const monthlySurplus = monthlyBusinessIncome + monthlyRentalIncome + monthlyPersonalIncome - monthlyExpenses - monthlyDebt;
+    const mBiz = totalBizIncome / 12;
+    const mRent = totalRentalIncome / 12;
+    const mPers = (totalPersonalIncome + Object.values(distIncome).reduce((a, b) => a + b, 0)) / 12;
+    const mExp = totalExp;
+    const mDebt = totalExDebt + (totalADS / 12);
+    const mSurplus = mBiz + mRent + mPers - mExp - mDebt;
     
-    // Borrowing capacity
-    const buffer = parseFloat(document.getElementById('bufferRate').value) || 3;
-    const assessmentRate = 7 + buffer;
-    const loanTerm = parseInt(document.getElementById('loanTerm').value) || 30;
+    const buffer = parseFloat(document.getElementById('bufferRate')?.value) || 3;
+    const aRate = 7 + buffer;
+    const term = parseInt(document.getElementById('loanTerm')?.value) || 30;
+    let capacity = 0;
+    if (mSurplus > 0) { const r = aRate / 100 / 12; const n = term * 12; capacity = mSurplus * (1 - Math.pow(1 + r, -n)) / r; capacity = Math.round(capacity / 1000) * 1000; }
     
-    let borrowingCapacity = 0;
-    if (monthlySurplus > 0) {
-      const r = assessmentRate / 100 / 12;
-      const n = loanTerm * 12;
-      borrowingCapacity = monthlySurplus * (1 - Math.pow(1 + r, -n)) / r;
-      borrowingCapacity = Math.round(borrowingCapacity / 1000) * 1000;
-    }
+    const dscr = totalADS > 0 ? (totalBizIncome / totalADS).toFixed(2) + 'x' : '—';
     
-    // DSCR (business level)
-    const overallDSCR = totalAnnualDebtService > 0 ? (totalBusinessIncome / totalAnnualDebtService).toFixed(2) + 'x' : '—';
+    const totalValue = data.securities.reduce((s, x) => s + (x.value || 0), 0);
+    const totalDebt = data.facilities.reduce((s, f) => s + (f.limit || 0), 0);
+    const lvr = totalValue > 0 ? ((totalDebt / totalValue) * 100).toFixed(1) + '%' : '—';
+    const lvrNum = totalValue > 0 ? (totalDebt / totalValue) * 100 : 0;
     
-    // DTI
-    const totalAnnualIncome = totalBusinessIncome + totalRentalIncome + totalPersonalIncome + Object.values(distributedIncome).reduce((a, b) => a + b, 0);
-    const totalDebt = data.facilities.reduce((sum, f) => sum + (f.limit || 0), 0);
+    const totalAnnualIncome = totalBizIncome + totalRentalIncome + totalPersonalIncome + Object.values(distIncome).reduce((a, b) => a + b, 0);
     const dti = totalAnnualIncome > 0 ? (totalDebt / totalAnnualIncome).toFixed(1) + 'x' : '0.0x';
     const dtiNum = totalAnnualIncome > 0 ? totalDebt / totalAnnualIncome : 0;
     
     // Update UI
-    document.getElementById('metricCapacity').textContent = fmt(borrowingCapacity);
-    document.getElementById('metricSurplus').textContent = fmt(monthlySurplus);
-    document.getElementById('metricSurplus').className = 'metric-value ' + (monthlySurplus >= 0 ? 'positive' : 'negative');
-    document.getElementById('metricDSCR').textContent = overallDSCR;
-    document.getElementById('metricDSCR').className = 'metric-value ' + getDSCRClass(totalBusinessIncome, totalAnnualDebtService);
+    document.getElementById('metricCapacity').textContent = fmt(capacity);
+    document.getElementById('metricSurplus').textContent = fmt(mSurplus);
+    document.getElementById('metricSurplus').className = 'metric-value ' + (mSurplus >= 0 ? 'positive' : 'negative');
+    document.getElementById('metricDSCR').textContent = dscr;
+    document.getElementById('metricDSCR').className = 'metric-value ' + getMetricClass(totalADS > 0 ? totalBizIncome/totalADS : 99, 1.25, 1.0);
+    document.getElementById('metricLVR').textContent = lvr;
+    document.getElementById('metricLVR').className = 'metric-value ' + getMetricClass(100 - lvrNum, 30, 20);
     document.getElementById('metricDTI').textContent = dti;
     document.getElementById('metricDTI').className = 'metric-value ' + (dtiNum <= 6 ? 'positive' : dtiNum <= 8 ? 'neutral' : 'negative');
     
     // Waterfall
-    const wfMax = Math.max(monthlyBusinessIncome, monthlyRentalIncome, monthlyPersonalIncome, monthlyExpenses, monthlyDebt, Math.abs(monthlySurplus), 1);
-    const wfScale = 120 / wfMax;
+    const wMax = Math.max(mBiz, mRent, mPers, mExp, mDebt, Math.abs(mSurplus), 1);
+    const wScale = 100 / wMax;
+    document.getElementById('wfBusiness').style.height = (mBiz * wScale) + 'px';
+    document.getElementById('wfBusinessVal').textContent = fmt(mBiz);
+    document.getElementById('wfRental').style.height = (mRent * wScale) + 'px';
+    document.getElementById('wfRentalVal').textContent = fmt(mRent);
+    document.getElementById('wfPersonal').style.height = (mPers * wScale) + 'px';
+    document.getElementById('wfPersonalVal').textContent = fmt(mPers);
+    document.getElementById('wfExpenses').style.height = (mExp * wScale) + 'px';
+    document.getElementById('wfExpensesVal').textContent = '-' + fmt(mExp);
+    document.getElementById('wfDebt').style.height = (mDebt * wScale) + 'px';
+    document.getElementById('wfDebtVal').textContent = '-' + fmt(mDebt);
+    document.getElementById('wfSurplus').style.height = (Math.abs(mSurplus) * wScale) + 'px';
+    document.getElementById('wfSurplus').className = 'waterfall-fill ' + (mSurplus >= 0 ? 'result' : 'deficit');
+    document.getElementById('wfSurplusVal').textContent = fmt(mSurplus);
+    document.getElementById('wfSurplusVal').className = 'waterfall-value ' + (mSurplus >= 0 ? 'result-val' : 'expense-val');
     
-    document.getElementById('wfBusiness').style.height = (monthlyBusinessIncome * wfScale) + 'px';
-    document.getElementById('wfBusinessVal').textContent = fmt(monthlyBusinessIncome);
-    document.getElementById('wfRental').style.height = (monthlyRentalIncome * wfScale) + 'px';
-    document.getElementById('wfRentalVal').textContent = fmt(monthlyRentalIncome);
-    document.getElementById('wfPersonal').style.height = (monthlyPersonalIncome * wfScale) + 'px';
-    document.getElementById('wfPersonalVal').textContent = fmt(monthlyPersonalIncome);
-    document.getElementById('wfExpenses').style.height = (monthlyExpenses * wfScale) + 'px';
-    document.getElementById('wfExpensesVal').textContent = '-' + fmt(monthlyExpenses);
-    document.getElementById('wfDebt').style.height = (monthlyDebt * wfScale) + 'px';
-    document.getElementById('wfDebtVal').textContent = '-' + fmt(monthlyDebt);
-    document.getElementById('wfSurplus').style.height = (Math.abs(monthlySurplus) * wfScale) + 'px';
-    document.getElementById('wfSurplus').className = 'waterfall-fill ' + (monthlySurplus >= 0 ? 'result' : 'deficit');
-    document.getElementById('wfSurplusVal').textContent = fmt(monthlySurplus);
-    document.getElementById('wfSurplusVal').className = 'waterfall-value ' + (monthlySurplus >= 0 ? 'result-val' : 'expense-val');
-    
+    renderSecurityTable();
     renderFacilityTable();
     renderBusinessTable();
-    renderIndividualTable(individualIncome, distributedIncome);
-    renderAlerts(dtiNum, totalBusinessIncome, totalAnnualDebtService);
-    
+    renderIndividualTable(indIncome, distIncome);
+    renderAlerts(dtiNum, lvrNum, totalBizIncome, totalADS);
     if (data.tier !== 'lite') renderSankeyChart();
     
-    saveToLocalStorage();
+    saveToStorage();
+  }
+  
+  function renderSecurityTable() {
+    const tbody = document.getElementById('securityTableBody');
+    if (data.securities.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No securities</td></tr>'; return; }
+    tbody.innerHTML = data.securities.map(s => {
+      const debt = data.facilities.filter(f => f.securityId === s.id).reduce((sum, f) => sum + (f.limit || 0), 0);
+      const lvr = s.value > 0 ? ((debt / s.value) * 100).toFixed(1) : 0;
+      return `<tr><td>${s.address || 'Property ' + s.id}</td><td>${PROPERTY_TYPES[s.type]?.label || s.type}</td><td class="amount">${fmt(s.value)}</td><td class="amount ${lvr > 80 ? 'negative' : lvr > 70 ? 'neutral' : 'positive'}">${lvr}%</td><td>${s.hasIncome ? '✓ ' + fmt(s.grossRent) + '/yr' : '—'}</td></tr>`;
+    }).join('');
   }
   
   function renderFacilityTable() {
     const tbody = document.getElementById('facilityTableBody');
-    if (data.facilities.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--muted);">No facilities</td></tr>'; return; }
-    
+    if (data.facilities.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No facilities</td></tr>'; return; }
     tbody.innerHTML = data.facilities.map(f => {
-      const { monthlyPI, monthlyIO } = calcFacilityPayments(f);
-      return `<tr><td><strong>${f.name}</strong></td><td>${fmt(f.limit)}</td><td>${f.rate?.toFixed(2) || 7}%</td><td>${f.type === 'io' ? 'I/O' : 'P&I'}</td><td class="amount negative">-${fmt(monthlyPI)}</td><td class="amount negative">-${fmt(monthlyIO)}</td></tr>`;
+      const { monthlyPI } = calcFacilityPayments(f);
+      return `<tr><td>${f.name}</td><td>${fmt(f.limit)}</td><td>${f.rate?.toFixed(2)||7}%</td><td>${f.type==='io'?'I/O':'P&I'}</td><td class="amount negative">-${fmt(f.type==='io'?monthlyPI*0.6:monthlyPI)}</td></tr>`;
     }).join('');
   }
   
   function renderBusinessTable() {
     const tbody = document.getElementById('businessTableBody');
-    if (data.companies.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No business entities</td></tr>'; return; }
-    
-    tbody.innerHTML = data.companies.map(c => {
-      const { annualDebtService, annualInterest } = getCompanyDebtService(c.id);
-      const icr = annualInterest > 0 ? ((c.ebitda || 0) / annualInterest).toFixed(2) + 'x' : 'N/A';
-      const dscr = annualDebtService > 0 ? ((c.ebitda || 0) / annualDebtService).toFixed(2) + 'x' : 'N/A';
-      return `<tr><td><strong>${c.name}</strong></td><td class="amount ${(c.ebitda||0) < 0 ? 'negative' : 'positive'}">${fmt(c.ebitda)}</td><td class="amount negative">-${fmt(annualDebtService)}</td><td class="amount ${getICRClass(c.ebitda, annualInterest)}">${icr}</td><td class="amount ${getDSCRClass(c.ebitda, annualDebtService)}">${dscr}</td></tr>`;
+    if (data.companies.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No businesses</td></tr>'; return; }
+    tbody.innerHTML = data.companies.map(co => {
+      const { annualDebtService, annualInterest } = getCompanyDebtService(co.id);
+      const icr = annualInterest > 0 ? ((co.ebitda || 0) / annualInterest).toFixed(2) + 'x' : '—';
+      const dscr = annualDebtService > 0 ? ((co.ebitda || 0) / annualDebtService).toFixed(2) + 'x' : '—';
+      return `<tr><td>${co.name}</td><td class="amount ${(co.ebitda||0)<0?'negative':'positive'}">${fmt(co.ebitda)}</td><td class="amount negative">-${fmt(annualDebtService)}</td><td class="amount ${getMetricClass(annualInterest>0?(co.ebitda||0)/annualInterest:99,1.5,1.0)}">${icr}</td><td class="amount ${getMetricClass(annualDebtService>0?(co.ebitda||0)/annualDebtService:99,1.25,1.0)}">${dscr}</td></tr>`;
     }).join('');
   }
   
-  function renderIndividualTable(incomeByPerson, distributedIncome) {
+  function renderIndividualTable(incomeByPerson, distIncome) {
     const tbody = document.getElementById('individualTableBody');
-    if (data.individuals.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--muted);">No individuals</td></tr>'; return; }
-    
+    if (data.individuals.length === 0) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);">No individuals</td></tr>'; return; }
     tbody.innerHTML = data.individuals.map(i => {
-      const totalIncome = incomeByPerson[i.id] || 0;
-      const expenses = Math.max(i.expenses || 0, calcHEM(i));
+      const totalInc = incomeByPerson[i.id] || 0;
+      const exp = Math.max(i.expenses || 0, calcHEM(i));
       const debt = (i.existingDebt || 0) + (i.creditCards || 0) * 0.03 + getIndividualDebtService(i.id);
-      const dti = totalIncome > 0 ? ((debt * 12) / totalIncome).toFixed(1) + 'x' : '0.0x';
-      return `<tr><td><strong>${i.name}</strong></td><td class="amount positive">${fmt(totalIncome / 12)}/mo</td><td class="amount negative">-${fmt(expenses)}/mo</td><td class="amount negative">-${fmt(debt)}/mo</td><td class="amount">${dti}</td></tr>`;
+      const dti = totalInc > 0 ? ((debt * 12) / totalInc).toFixed(1) + 'x' : '—';
+      return `<tr><td>${i.name}</td><td class="amount positive">${fmt(totalInc/12)}/mo</td><td class="amount negative">-${fmt(exp)}/mo</td><td class="amount negative">-${fmt(debt)}/mo</td><td class="amount">${dti}</td></tr>`;
     }).join('');
   }
   
-  function renderAlerts(dti, totalBizIncome, totalDebtService) {
+  function renderAlerts(dti, lvr, bizInc, ads) {
     const alerts = [];
-    
-    data.companies.forEach(c => {
-      if ((c.ebitda || 0) < 0) {
-        alerts.push({ type: 'danger', message: `📉 ${c.name}: Operating at a LOSS. Significantly impacts borrowing capacity.` });
-      }
-      
-      const { annualDebtService, annualInterest } = getCompanyDebtService(c.id);
-      if (annualInterest > 0) {
-        const icr = (c.ebitda || 0) / annualInterest;
-        if (icr < 1.0) alerts.push({ type: 'danger', message: `⚠️ ${c.name}: ICR ${icr.toFixed(2)}x below 1.0 — cannot cover interest` });
-        else if (icr < 1.5) alerts.push({ type: 'warning', message: `⚡ ${c.name}: ICR ${icr.toFixed(2)}x is marginal (prefer 1.5x+)` });
-      }
-      if (annualDebtService > 0) {
-        const dscr = (c.ebitda || 0) / annualDebtService;
-        if (dscr < 1.0) alerts.push({ type: 'danger', message: `⚠️ ${c.name}: DSCR ${dscr.toFixed(2)}x below 1.0 — insufficient debt service` });
-        else if (dscr < 1.25) alerts.push({ type: 'warning', message: `⚡ ${c.name}: DSCR ${dscr.toFixed(2)}x is marginal (prefer 1.25x+)` });
-      }
-      
-      if (c.holders.length > 0) {
-        const total = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
-        if (total !== 100) alerts.push({ type: 'warning', message: `⚡ ${c.name}: Holdings = ${total}% (should be 100%)` });
-      }
+    data.companies.forEach(co => {
+      if ((co.ebitda || 0) < 0) alerts.push({ type: 'danger', msg: `📉 ${co.name}: Loss. Major impact.` });
+      const { annualDebtService, annualInterest } = getCompanyDebtService(co.id);
+      if (annualInterest > 0 && (co.ebitda||0)/annualInterest < 1) alerts.push({ type: 'danger', msg: `⚠️ ${co.name}: ICR < 1.0` });
+      if (annualDebtService > 0 && (co.ebitda||0)/annualDebtService < 1) alerts.push({ type: 'danger', msg: `⚠️ ${co.name}: DSCR < 1.0` });
     });
+    if (dti > 8) alerts.push({ type: 'danger', msg: `⚠️ DTI ${dti.toFixed(1)}x > 8x — very high` });
+    else if (dti > 6) alerts.push({ type: 'warning', msg: `⚡ DTI ${dti.toFixed(1)}x > 6x — elevated` });
+    if (lvr > 80) alerts.push({ type: 'danger', msg: `⚠️ LVR ${lvr.toFixed(1)}% > 80% — over limit` });
+    else if (lvr > 70) alerts.push({ type: 'warning', msg: `⚡ LVR ${lvr.toFixed(1)}% > 70% — high` });
     
-    if (dti > 8) alerts.push({ type: 'danger', message: `⚠️ DTI ${dti.toFixed(1)}x exceeds 8x — very high, unlikely to meet policy` });
-    else if (dti > 6) alerts.push({ type: 'warning', message: `⚡ DTI ${dti.toFixed(1)}x exceeds 6x — elevated, may require justification` });
-    
-    const container = document.getElementById('alertsContainer');
-    if (alerts.length === 0) { container.innerHTML = ''; return; }
-    
-    container.innerHTML = alerts.map(a => `<div style="background:${a.type === 'danger' ? 'var(--danger-light)' : 'var(--warning-light)'}; color:${a.type === 'danger' ? 'var(--danger)' : 'var(--warning)'}; padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:8px; border-left:4px solid ${a.type === 'danger' ? 'var(--danger)' : 'var(--warning)'};">${a.message}</div>`).join('');
+    document.getElementById('alertsContainer').innerHTML = alerts.length === 0 ? '' : alerts.map(a => `<div style="background:${a.type==='danger'?'var(--danger-light)':'var(--warning-light)'};color:${a.type==='danger'?'var(--danger)':'var(--warning)'};padding:8px 12px;border-radius:6px;font-size:11px;margin-bottom:6px;border-left:3px solid ${a.type==='danger'?'var(--danger)':'var(--warning)'};">${a.msg}</div>`).join('');
   }
   
-  // ===== SANKEY CHART =====
+  // ===== SANKEY =====
   function renderSankeyChart() {
-    const container = document.getElementById('sankeyChart');
-    if (data.tier === 'lite') {
-      container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--muted);">🔒 Sankey diagram requires Standard+</div>';
-      return;
-    }
+    const c = document.getElementById('sankeyChart');
+    if (data.tier === 'lite') { c.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">🔒 Standard+</div>'; return; }
+    if (data.companies.length === 0 && data.individuals.length === 0) { c.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Add data to see flow</div>'; return; }
     
-    container.innerHTML = '';
-    
-    // Build nodes and links
-    const nodes = [];
-    const links = [];
-    const nodeMap = {};
-    
+    c.innerHTML = '';
+    const nodes = [], links = [], nodeMap = {};
     let idx = 0;
-    const addNode = (name) => { if (!(name in nodeMap)) { nodeMap[name] = idx++; nodes.push({ name }); } return nodeMap[name]; };
+    const addNode = name => { if (!(name in nodeMap)) { nodeMap[name] = idx++; nodes.push({ name }); } return nodeMap[name]; };
     
-    // Business income nodes
-    data.companies.forEach(c => {
-      if ((c.ebitda || 0) > 0) {
-        const srcIdx = addNode(c.name);
-        const distribution = Math.min(c.distribution || 0, c.ebitda);
-        
-        if (distribution > 0) {
-          c.holders.forEach(h => {
-            const ind = data.individuals.find(i => i.id === h.entityId);
-            if (ind && h.percentage > 0) {
-              const totalHolding = c.holders.reduce((s, x) => s + (parseFloat(x.percentage) || 0), 0);
-              const share = distribution * (h.percentage / totalHolding);
-              if (share > 0) {
-                const tgtIdx = addNode(ind.name);
-                links.push({ source: srcIdx, target: tgtIdx, value: share / 12 });
-              }
+    data.companies.forEach(co => {
+      if ((co.ebitda || 0) > 0) {
+        const src = addNode(co.name);
+        const dist = Math.min(co.distribution || 0, co.ebitda);
+        if (dist > 0) {
+          const total = co.holders.reduce((s, h) => s + (parseFloat(h.percentage) || 0), 0);
+          co.holders.forEach(h => {
+            const ind = data.individuals.find(x => x.id === h.entityId);
+            if (ind && h.percentage > 0 && total > 0) {
+              const tgt = addNode(ind.name);
+              links.push({ source: src, target: tgt, value: dist * h.percentage / total / 12 });
             }
           });
         }
       }
     });
     
-    // Individual income to surplus
     data.individuals.forEach(i => {
-      const srcIdx = addNode(i.name);
-      const surplusIdx = addNode('Surplus/Debt');
-      
+      const src = addNode(i.name);
+      const sinkExp = addNode('Expenses');
       const hem = calcHEM(i);
-      const expenses = Math.max(i.expenses || 0, hem);
-      const expenseIdx = addNode('Living Expenses');
-      
-      links.push({ source: srcIdx, target: expenseIdx, value: expenses });
+      const exp = Math.max(i.expenses || 0, hem);
+      if (exp > 0) links.push({ source: src, target: sinkExp, value: exp });
     });
     
-    if (nodes.length < 2 || links.length === 0) {
-      container.innerHTML = '<div style="text-align:center; padding:40px; color:var(--muted);">Add entities and income to see Sankey diagram</div>';
-      return;
+    if (nodes.length < 2 || links.length === 0) { c.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Add distributions</div>'; return; }
+    
+    const w = c.clientWidth || 500, h = 240;
+    const svg = d3.create('svg').attr('width', w).attr('height', h);
+    try {
+      const sankey = d3.sankey().nodeWidth(12).nodePadding(8).extent([[1, 5], [w - 1, h - 5]]);
+      const { nodes: sn, links: sl } = sankey({ nodes: nodes.map(d => ({ ...d })), links: links.map(d => ({ ...d })) });
+      svg.append('g').selectAll('rect').data(sn).join('rect').attr('x', d => d.x0).attr('y', d => d.y0).attr('height', d => d.y1 - d.y0).attr('width', d => d.x1 - d.x0).attr('fill', (d, i) => d3.schemeCategory10[i % 10]).attr('opacity', 0.8);
+      svg.append('g').attr('fill', 'none').selectAll('path').data(sl).join('path').attr('d', d3.sankeyLinkHorizontal()).attr('stroke', d => d3.schemeCategory10[d.source.index % 10]).attr('stroke-width', d => Math.max(1, d.width)).attr('opacity', 0.4);
+      svg.append('g').style('font', '9px Inter').selectAll('text').data(sn).join('text').attr('x', d => d.x0 < w / 2 ? d.x1 + 4 : d.x0 - 4).attr('y', d => (d.y1 + d.y0) / 2).attr('dy', '0.35em').attr('text-anchor', d => d.x0 < w / 2 ? 'start' : 'end').attr('fill', 'currentColor').text(d => d.name);
+      c.appendChild(svg.node());
+    } catch (e) { c.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);">Sankey error</div>'; }
+  }
+  
+  // ===== INTEGRATION =====
+  function exportToTool(tool) {
+    const exportData = { source: 'servicing-calculator', timestamp: Date.now(), data: { securities: data.securities, facilities: data.facilities, companies: data.companies, individuals: data.individuals, metrics: getCurrentMetrics() } };
+    localStorage.setItem('oney_export_' + tool, JSON.stringify(exportData));
+    alert(`Data ready for ${tool}. Open that tool to import.`);
+  }
+  
+  function importFrom(source) {
+    if (source === 'clipboard') {
+      const json = document.getElementById('importData').value;
+      processImportData(json);
+    } else {
+      const stored = localStorage.getItem('oney_export_' + source);
+      if (stored) { processImportData(stored); }
+      else { alert('No data from ' + source); }
     }
-    
-    const width = container.clientWidth || 600;
-    const height = 250;
-    
-    const svg = d3.create('svg').attr('width', width).attr('height', height);
-    
-    const sankey = d3.sankey().nodeWidth(15).nodePadding(10).extent([[1, 5], [width - 1, height - 5]]);
-    const { nodes: sankeyNodes, links: sankeyLinks } = sankey({ nodes: nodes.map(d => ({ ...d })), links: links.map(d => ({ ...d })) });
-    
-    svg.append('g').selectAll('rect').data(sankeyNodes).join('rect')
-      .attr('x', d => d.x0).attr('y', d => d.y0).attr('height', d => d.y1 - d.y0).attr('width', d => d.x1 - d.x0)
-      .attr('fill', (d, i) => d3.schemeCategory10[i % 10]).attr('opacity', 0.8);
-    
-    svg.append('g').attr('fill', 'none').selectAll('path').data(sankeyLinks).join('path')
-      .attr('d', d3.sankeyLinkHorizontal()).attr('stroke', d => d3.schemeCategory10[d.source.index % 10]).attr('stroke-width', d => Math.max(1, d.width)).attr('opacity', 0.5);
-    
-    svg.append('g').style('font', '10px Inter').selectAll('text').data(sankeyNodes).join('text')
-      .attr('x', d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6).attr('y', d => (d.y1 + d.y0) / 2).attr('dy', '0.35em')
-      .attr('text-anchor', d => d.x0 < width / 2 ? 'start' : 'end').text(d => d.name);
-    
-    container.appendChild(svg.node());
   }
   
-  // ===== PDF EXPORT =====
-  function exportPDF() {
-    const element = document.getElementById('previewContent');
-    const opt = {
-      margin: [10, 10, 10, 10],
-      filename: `servicing-summary-${new Date().toISOString().slice(0, 10)}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-    html2pdf().set(opt).from(element).save();
-  }
+  function processImport() { importFrom('clipboard'); hideImportModal(); }
   
-  function resetAll() {
-    if (confirm('Reset all data? Saved scenarios will be preserved.')) {
-      data = {
-        companies: [], individuals: [], facilities: [], households: [], rentalProperties: [],
-        settings: { lenderTier: 'major', lenderPreset: null, bufferRate: 3.0, loanTerm: 30, hemLocation: 'sydney', incomeShading: 80, rentalShading: 80 },
-        tier: data.tier, licenseKey: data.licenseKey
-      };
-      entityIdCounter = 0; facilityIdCounter = 0; householdIdCounter = 0;
+  function processImportData(json) {
+    try {
+      const parsed = JSON.parse(json);
+      if (parsed.data?.securities) { data.securities = [...data.securities, ...parsed.data.securities.map(s => ({ ...s, id: ++securityIdCounter }))]; }
+      if (parsed.data?.facilities) { data.facilities = [...data.facilities, ...parsed.data.facilities.map(f => ({ ...f, id: ++facilityIdCounter }))]; }
       renderAll();
-    }
+      alert('Imported successfully!');
+    } catch (e) { alert('Invalid data'); }
   }
+  
+  // ===== PDF & RESET =====
+  function exportPDF() {
+    const el = document.getElementById('previewContent');
+    html2pdf().set({ margin: [8, 8, 8, 8], filename: `servicing-${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(el).save();
+  }
+  
+  function resetAll() { if (confirm('Reset all? Scenarios preserved.')) { data = { companies: [], individuals: [], facilities: [], households: [], securities: [], settings: { lenderTier: 'major', lenderPreset: null, bufferRate: 3.0, loanTerm: 30, hemLocation: 'sydney', incomeShading: 80, rentalShading: 80 }, tier: data.tier, licenseKey: data.licenseKey }; entityIdCounter = 0; facilityIdCounter = 0; householdIdCounter = 0; securityIdCounter = 0; renderAll(); } }
 </script>
 </body>
 </html>
