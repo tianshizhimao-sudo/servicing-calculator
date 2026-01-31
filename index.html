@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Servicing Calculator — Oney & Co</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --gold: #2ECC85; --gold-dark: #1FAD73; --gold-light: rgba(31, 173, 115, 0.15);
+      --navy: #1E293B; --navy-light: #334155;
+      --bg: #F8FAFC; --card: #FFFFFF; --border: #E2E8F0;
+      --success: #059669; --success-light: #D1FAE5;
+      --warning: #D97706; --warning-light: #FEF3C7;
+      --danger: #DC2626; --danger-light: #FEE2E2;
+      --info: #2563EB; --info-light: #DBEAFE;
+      --purple: #7C3AED; --purple-light: rgba(124, 58, 237, 0.1);
+      --text: #1E293B; --muted: #64748B;
+      --radius: 12px; --radius-sm: 8px;
+      
+      --section-entity: rgba(124, 58, 237, 0.04);
+      --section-facility: rgba(37, 99, 235, 0.04);
+      --section-income: rgba(16, 185, 129, 0.04);
+      --section-expense: rgba(239, 68, 68, 0.04);
+      --section-settings: rgba(100, 116, 139, 0.04);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; font-size: 13px; }
+    
+    .app { display: grid; grid-template-columns: 500px 1fr; min-height: 100vh; }
+    .sidebar { background: var(--card); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; height: 100vh; position: sticky; top: 0; }
+    .main { padding: 24px 32px; overflow-y: auto; }
+    
+    .logo-container { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .logo-svg { width: 100px; height: auto; }
+    .app-title { font-size: 12px; color: var(--muted); }
+    .app-title strong { display: block; color: var(--navy); font-size: 14px; }
+    
+    .tier-banner { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 8px 12px; background: linear-gradient(90deg, #f1f5f9, #e2e8f0); border-radius: var(--radius-sm); }
+    .tier-badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #64748B; color: white; }
+    .privacy-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--success); }
+    
+    .section { margin-bottom: 16px; }
+    .section-title { font-size: 10px; font-weight: 700; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--gold), transparent); }
+    
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; font-weight: 500; }
+    input, select, textarea { width: 100%; padding: 8px 10px; font-size: 12px; font-family: inherit; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); }
+    input:focus, select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-light); }
+    input[type="number"] { -moz-appearance: textfield; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+    input:read-only { background: #f1f5f9; color: var(--muted); }
+    input.invalid, select.invalid { border-color: var(--danger); background: var(--danger-light); }
+    input.invalid:focus, select.invalid:focus { box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2); }
+    .validation-error { color: var(--danger); font-size: 10px; margin-top: 2px; display: none; }
+    .validation-error.show { display: block; }
+    
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .form-group { margin-bottom: 8px; }
+    .helper { font-size: 10px; color: var(--muted); margin-top: 2px; font-style: italic; }
+    .note-box { background: var(--info-light); border: 1px solid var(--info); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11px; color: var(--info); margin: 8px 0; }
+    .locked-note { background: var(--warning-light); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 11px; color: var(--warning); margin: 8px 0; }
+    
+    .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+    .chip { padding: 4px 9px; font-size: 10px; border-radius: 14px; cursor: pointer; background: var(--bg); border: 1px solid var(--border); color: var(--muted); transition: all 0.15s; font-weight: 500; }
+    .chip:hover { border-color: var(--gold); color: var(--text); }
+    .chip.active { background: var(--gold); border-color: var(--gold); color: white; }
+    
+    .tabs { display: flex; gap: 2px; margin-bottom: 12px; background: var(--bg); padding: 3px; border-radius: var(--radius-sm); }
+    .tab { flex: 1; padding: 8px 4px; font-size: 10px; font-weight: 500; border-radius: 6px; cursor: pointer; background: transparent; border: none; color: var(--muted); text-align: center; transition: all 0.2s; }
+    .tab:hover { color: var(--navy); }
+    .tab.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .tab[data-tab="entities"].active { color: var(--purple); }
+    .tab[data-tab="facility"].active { color: var(--info); }
+    .tab[data-tab="income"].active { color: var(--success); }
+    .tab[data-tab="expenses"].active { color: var(--danger); }
+    .tab[data-tab="settings"].active { color: var(--muted); }
+    .tab-content { display: none; padding: 12px; margin: -12px; margin-top: 0; border-radius: var(--radius-sm); }
+    .tab-content.active { display: block; }
+    #tab-entities.active { background: var(--section-entity); }
+    #tab-facility.active { background: var(--section-facility); }
+    #tab-income.active { background: var(--section-income); }
+    #tab-expenses.active { background: var(--section-expense); }
+    #tab-settings.active { background: var(--section-settings); }
+    
+    .btn { padding: 8px 14px; font-size: 11px; font-weight: 600; border-radius: var(--radius-sm); cursor: pointer; border: none; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: white; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-ghost:hover { background: var(--bg); border-color: var(--gold); }
+    .btn-sm { padding: 5px 8px; font-size: 10px; }
+    .actions { display: flex; gap: 5px; flex-wrap: wrap; }
+    
+    .entity-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px; position: relative; }
+    .entity-card.company { border-left: 3px solid var(--info); }
+    .entity-card.individual { border-left: 3px solid var(--purple); }
+    .entity-card.facility { border-left: 3px solid var(--warning); }
+    .entity-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .entity-card-title { font-size: 12px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+    .entity-type-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .entity-type-badge.company { background: var(--info-light); color: var(--info); }
+    .entity-type-badge.individual { background: var(--purple-light); color: var(--purple); }
+    .entity-type-badge.facility { background: var(--warning-light); color: var(--warning); }
+    .remove-btn { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+    .remove-btn:hover { background: var(--danger-light); }
+    
+    .mini-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+    .mini-metric { text-align: center; }
+    .mini-metric-label { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+    .mini-metric-value { font-size: 14px; font-weight: 700; }
+    .mini-metric-value.positive { color: var(--success); }
+    .mini-metric-value.negative { color: var(--danger); }
+    .mini-metric-value.neutral { color: var(--navy); }
+    
+    .holder-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; padding: 6px 8px; background: var(--bg); border-radius: var(--radius-sm); }
+    .holder-row select { flex: 1; }
+    .holder-row input[type="number"] { width: 70px; }
+    .holder-row .remove-btn { padding: 0 4px; }
+    
+    .distribution-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; padding: 4px 8px; background: var(--bg); border-radius: var(--radius-sm); font-size: 11px; }
+    .distribution-row .name { flex: 1; }
+    .distribution-row .percent { width: 50px; text-align: right; color: var(--muted); }
+    .distribution-row .amount { width: 80px; text-align: right; font-weight: 600; color: var(--success); }
+    
+    .preview { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 3px solid var(--gold); }
+    .preview-logo-svg { width: 100px; }
+    .preview-meta { text-align: right; }
+    .preview-title { font-size: 16px; font-weight: 700; color: var(--navy); }
+    .preview-subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .preview h2 { font-size: 10px; color: var(--gold-dark); text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--border); }
+    
+    .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+    .metric-box { background: linear-gradient(135deg, var(--bg), white); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: center; transition: all 0.2s; position: relative; overflow: hidden; }
+    .metric-box::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+    .metric-box.capacity::before { background: linear-gradient(90deg, var(--gold), var(--gold-dark)); }
+    .metric-box.surplus::before { background: linear-gradient(90deg, var(--success), #047857); }
+    .metric-box.dti::before { background: linear-gradient(90deg, var(--info), #1D4ED8); }
+    .metric-box:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .metric-label { font-size: 9px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .metric-value { font-size: 24px; font-weight: 700; }
+    .metric-value.positive { color: var(--success); }
+    .metric-value.negative { color: var(--danger); }
+    .metric-value.neutral { color: var(--navy); }
+    .metric-sub { font-size: 9px; color: var(--muted); margin-top: 4px; }
+    
+    .entity-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 14px 0; }
+    .entity-summary-card { background: white; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+    .entity-summary-card.company { border-top: 3px solid var(--info); }
+    .entity-summary-card.individual { border-top: 3px solid var(--purple); }
+    .entity-summary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .entity-summary-name { font-size: 12px; font-weight: 600; color: var(--navy); }
+    .entity-summary-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .entity-summary-metric-label { font-size: 9px; color: var(--muted); }
+    .entity-summary-metric-value { font-size: 13px; font-weight: 600; }
+    
+    .waterfall { display: flex; align-items: flex-end; justify-content: space-around; height: 200px; padding: 20px 10px; border-bottom: 2px solid var(--border); margin: 20px 0; background: linear-gradient(180deg, transparent 0%, rgba(248,250,252,0.8) 100%); border-radius: var(--radius-sm); }
+    .waterfall-bar { display: flex; flex-direction: column; align-items: center; width: 80px; }
+    .waterfall-value { font-size: 10px; font-weight: 600; margin-bottom: 4px; padding: 2px 6px; border-radius: 4px; }
+    .waterfall-value.income-val { background: var(--success-light); color: var(--success); }
+    .waterfall-value.expense-val { background: var(--danger-light); color: var(--danger); }
+    .waterfall-value.result-val { background: var(--gold-light); color: var(--gold-dark); }
+    .waterfall-fill { width: 50px; border-radius: 6px 6px 0 0; transition: height 0.4s ease-out; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); }
+    .waterfall-fill.income { background: linear-gradient(180deg, #34D399 0%, #10B981 50%, #059669 100%); }
+    .waterfall-fill.expense { background: linear-gradient(180deg, #FCA5A5 0%, #F87171 50%, #EF4444 100%); }
+    .waterfall-fill.result { background: linear-gradient(180deg, #4ADE80 0%, var(--gold) 50%, var(--gold-dark) 100%); }
+    .waterfall-fill.deficit { background: linear-gradient(180deg, #FCA5A5 0%, #F87171 50%, #DC2626 100%); }
+    .waterfall-label { font-size: 9px; color: var(--muted); margin-top: 8px; text-align: center; font-weight: 500; }
+    
+    .breakdown-table { width: 100%; border-collapse: collapse; font-size: 11px; margin: 12px 0; border-radius: var(--radius-sm); overflow: hidden; }
+    .breakdown-table th, .breakdown-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .breakdown-table th { background: linear-gradient(135deg, var(--bg), #EEF2F7); font-weight: 600; color: var(--navy); font-size: 10px; text-transform: uppercase; }
+    .breakdown-table tbody tr { transition: background 0.15s; }
+    .breakdown-table tbody tr:nth-child(even) { background: rgba(248,250,252,0.5); }
+    .breakdown-table tbody tr:hover { background: var(--gold-light); }
+    .breakdown-table .amount { text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; }
+    .breakdown-table .amount.positive { color: var(--success); }
+    .breakdown-table .amount.negative { color: var(--danger); }
+    .breakdown-table .total-row { background: linear-gradient(135deg, var(--gold-light), rgba(31, 173, 115, 0.2)) !important; font-weight: 700; }
+    .breakdown-table .total-row td { border-top: 2px solid var(--gold); }
+    
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; max-height: 60vh; }
+    }
+    @media print {
+      .sidebar { display: none !important; }
+      .app { display: block !important; }
+      .main { padding: 0 !important; }
+      .preview { box-shadow: none !important; border: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <aside class="sidebar">
+    <div class="logo-container">
+      <svg class="logo-svg" viewBox="0 0 190 90" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC85"/><stop offset="100%" style="stop-color:#1FAD73"/></linearGradient></defs>
+        <g transform="translate(38, 45)"><path d="M 0 -32 A 32 32 0 1 0 0 -31.99" fill="none" stroke="url(#greenGrad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="191 10"/><path d="M0 -38 L0 -44" stroke="url(#greenGrad)" stroke-width="5" stroke-linecap="round"/></g>
+        <text x="32" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">ney</text>
+        <text x="77" y="50" font-family="Inter, Arial" font-size="20" fill="url(#greenGrad)">&amp;</text>
+        <text x="94" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">co</text>
+      </svg>
+      <div class="app-title">
+        <strong>Servicing Calculator</strong>
+        SME & Self-Employed
+      </div>
+    </div>
+    
+    <div class="tier-banner">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span class="tier-badge">LITE</span>
+        <span style="font-size: 11px; color: var(--muted);">Free Version</span>
+      </div>
+      <span class="privacy-badge">🔒 No Data Stored</span>
+    </div>
+    
+    <div class="actions" style="margin-bottom: 12px;">
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">🔄 Reset</button>
+      <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨️ Print</button>
+      <button class="btn btn-primary btn-sm" onclick="exportPDF()">📄 Export PDF</button>
+    </div>
+    
+    <!-- TABS: Entities -> Facility -> Income -> Expenses -> Settings -->
+    <div class="tabs">
+      <div class="tab active" data-tab="entities" onclick="switchTab('entities')">👥 Entities</div>
+      <div class="tab" data-tab="facility" onclick="switchTab('facility')">🏦 Facility</div>
+      <div class="tab" data-tab="income" onclick="switchTab('income')">💰 Income</div>
+      <div class="tab" data-tab="expenses" onclick="switchTab('expenses')">🏠 Expenses</div>
+      <div class="tab" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
+    </div>
+    
+    <!-- TAB 1: ENTITIES -->
+    <div id="tab-entities" class="tab-content active">
+      <div class="section">
+        <div class="section-title">Business Entities</div>
+        <div id="companyEntitiesContainer"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addCompanyEntity()">+ Add Company / Trust / Partnership</button>
+      </div>
+      
+      <div class="section" style="margin-top: 16px;">
+        <div class="section-title">Individuals</div>
+        <div id="individualEntitiesContainer"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addIndividualEntity()">+ Add Individual</button>
+      </div>
+    </div>
+    
+    <!-- TAB 2: FACILITY (moved up) -->
+    <div id="tab-facility" class="tab-content">
+      <div class="note-box">💡 Add facilities to calculate interest expense. Interest is auto-calculated and attributed to the borrowing entity for ICR/DSCR.</div>
+      
+      <div class="section">
+        <div class="section-title">Facilities</div>
+        <div id="facilitiesContainer"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addFacility()">+ Add Facility</button>
+      </div>
+    </div>
+    
+    <!-- TAB 3: INCOME -->
+    <div id="tab-income" class="tab-content">
+      <div class="note-box">💡 Enter EBITDA and distribution amount. System auto-allocates to beneficial holders based on shareholding %.</div>
+      
+      <div class="section">
+        <div class="section-title">Business Income & Distribution</div>
+        <div id="businessIncomeContainer">
+          <p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add business entities in the Entities tab first</p>
+        </div>
+      </div>
+      
+      <div class="section" style="margin-top: 16px;">
+        <div class="section-title">Individual Income</div>
+        <div id="individualIncomeContainer">
+          <p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals in the Entities tab first</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- TAB 4: EXPENSES -->
+    <div id="tab-expenses" class="tab-content">
+      <div class="note-box">💡 Living expenses assessed per household. Credit cards and existing debt included.</div>
+      
+      <div id="expensesContainer">
+        <p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals in the Entities tab first</p>
+      </div>
+    </div>
+    
+    <!-- TAB 5: SETTINGS -->
+    <div id="tab-settings" class="tab-content">
+      <div class="section">
+        <div class="section-title">Lender Tier</div>
+        <div class="chips" style="margin-bottom: 12px;">
+          <span class="chip active" data-value="major" onclick="setLenderTier('major', this)">Major Bank</span>
+          <span class="chip" data-value="second" onclick="setLenderTier('second', this)">2nd Tier</span>
+          <span class="chip" data-value="nonbank" onclick="setLenderTier('nonbank', this)">Non-Bank</span>
+          <span class="chip" data-value="private" onclick="setLenderTier('private', this)">Private</span>
+        </div>
+        <div class="helper" id="tierHint">Major banks: Stricter assessment, 3% buffer</div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">Assessment Parameters</div>
+        <div class="row">
+          <div class="form-group">
+            <label>Buffer Rate %</label>
+            <input type="number" id="bufferRate" value="3.0" step="0.25" oninput="calculate()">
+          </div>
+          <div class="form-group">
+            <label>Loan Term (Years)</label>
+            <select id="loanTerm" onchange="calculate()">
+              <option value="30">30 years</option>
+              <option value="25">25 years</option>
+              <option value="20">20 years</option>
+              <option value="15">15 years</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="section">
+        <div class="section-title">HEM Location</div>
+        <select id="hemLocation" onchange="calculate()">
+          <option value="sydney">Sydney Metro</option>
+          <option value="melbourne">Melbourne Metro</option>
+          <option value="other_metro">Other Metro</option>
+          <option value="regional">Regional</option>
+        </select>
+      </div>
+    </div>
+  </aside>
+  
+  <!-- MAIN PREVIEW -->
+  <main class="main">
+    <div class="preview">
+      <div class="preview-header">
+        <svg class="preview-logo-svg" viewBox="0 0 190 90" xmlns="http://www.w3.org/2000/svg">
+          <defs><linearGradient id="greenGrad2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:#2ECC85"/><stop offset="100%" style="stop-color:#1FAD73"/></linearGradient></defs>
+          <g transform="translate(38, 45)"><path d="M 0 -32 A 32 32 0 1 0 0 -31.99" fill="none" stroke="url(#greenGrad2)" stroke-width="7" stroke-linecap="round" stroke-dasharray="191 10"/><path d="M0 -38 L0 -44" stroke="url(#greenGrad2)" stroke-width="5" stroke-linecap="round"/></g>
+          <text x="32" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">ney</text>
+          <text x="77" y="50" font-family="Inter, Arial" font-size="20" fill="url(#greenGrad2)">&amp;</text>
+          <text x="94" y="50" font-family="Inter, Arial" font-size="26" font-weight="600" fill="#1E293B">co</text>
+        </svg>
+        <div class="preview-meta">
+          <div class="preview-title">Servicing Summary</div>
+          <div class="preview-subtitle">SME / Self-Employed Assessment</div>
+        </div>
+      </div>
+      
+      <div id="alertsContainer" style="display: none; margin-bottom: 16px;"></div>
+      
+      <div class="metric-grid">
+        <div class="metric-box capacity">
+          <div class="metric-label">Est. Borrowing Capacity</div>
+          <div class="metric-value neutral" id="metricCapacity">$0</div>
+          <div class="metric-sub">based on surplus</div>
+        </div>
+        <div class="metric-box surplus">
+          <div class="metric-label">Monthly Surplus</div>
+          <div class="metric-value positive" id="metricSurplus">$0</div>
+          <div class="metric-sub">net of expenses</div>
+        </div>
+        <div class="metric-box dti">
+          <div class="metric-label">Household DTI</div>
+          <div class="metric-value neutral" id="metricDTI">0.0x</div>
+          <div class="metric-sub">debt to income</div>
+        </div>
+      </div>
+      
+      <h2>Entity Summary</h2>
+      <div class="entity-summary" id="entitySummaryContainer">
+        <p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">No entities added yet</p>
+      </div>
+      
+      <h2>Cash Flow Waterfall (Monthly)</h2>
+      <div class="waterfall" id="waterfallChart">
+        <div class="waterfall-bar">
+          <div class="waterfall-value income-val" id="wfBusinessVal">$0</div>
+          <div class="waterfall-fill income" id="wfBusiness" style="height: 0px;"></div>
+          <div class="waterfall-label">Business<br>Income</div>
+        </div>
+        <div class="waterfall-bar">
+          <div class="waterfall-value income-val" id="wfPersonalVal">$0</div>
+          <div class="waterfall-fill income" id="wfPersonal" style="height: 0px;"></div>
+          <div class="waterfall-label">Personal<br>Income</div>
+        </div>
+        <div class="waterfall-bar">
+          <div class="waterfall-value expense-val" id="wfExpensesVal">-$0</div>
+          <div class="waterfall-fill expense" id="wfExpenses" style="height: 0px;"></div>
+          <div class="waterfall-label">Living<br>Expenses</div>
+        </div>
+        <div class="waterfall-bar">
+          <div class="waterfall-value expense-val" id="wfDebtVal">-$0</div>
+          <div class="waterfall-fill expense" id="wfDebt" style="height: 0px;"></div>
+          <div class="waterfall-label">Existing<br>Debt</div>
+        </div>
+        <div class="waterfall-bar">
+          <div class="waterfall-value result-val" id="wfSurplusVal">$0</div>
+          <div class="waterfall-fill result" id="wfSurplus" style="height: 0px;"></div>
+          <div class="waterfall-label">Net<br>Surplus</div>
+        </div>
+      </div>
+      
+      <h2>Business Entity Analysis</h2>
+      <table class="breakdown-table" id="businessTable">
+        <thead>
+          <tr>
+            <th>Entity</th>
+            <th class="amount">EBITDA</th>
+            <th class="amount">Interest</th>
+            <th class="amount">ICR</th>
+            <th class="amount">DSCR</th>
+          </tr>
+        </thead>
+        <tbody id="businessTableBody">
+          <tr><td colspan="5" style="text-align:center; color: var(--muted);">No business entities</td></tr>
+        </tbody>
+      </table>
+      
+      <h2>Individual Summary</h2>
+      <table class="breakdown-table" id="individualTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th class="amount">Income</th>
+            <th class="amount">Expenses</th>
+            <th class="amount">Debt</th>
+            <th class="amount">DTI</th>
+          </tr>
+        </thead>
+        <tbody id="individualTableBody">
+          <tr><td colspan="5" style="text-align:center; color: var(--muted);">No individuals</td></tr>
+        </tbody>
+      </table>
+      
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted);">
+        <strong>Disclaimer:</strong> This is an indicative estimate only. Actual borrowing capacity depends on lender credit policy, full document assessment, and other factors.
+        <br><br>
+        <span style="color: var(--success);">🔒 Privacy: All calculations performed locally. No data stored or transmitted.</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // ===== DATA MODEL =====
+  let data = {
+    companies: [],    // { id, name, type, ebitda, distribution, holders: [{entityId, percentage}] }
+    individuals: [],  // { id, name, householdId, income, incomeType, expenses, dependents, existingDebt, creditCards }
+    facilities: [],   // { id, name, borrowerId, borrowerType, limit, rate, type }
+    households: [],   // { id, name }
+    settings: {
+      lenderTier: 'major',
+      bufferRate: 3.0,
+      loanTerm: 30,
+      hemLocation: 'sydney'
+    }
+  };
+  
+  let entityIdCounter = 0;
+  let facilityIdCounter = 0;
+  let householdIdCounter = 0;
+  
+  // HEM Benchmarks (monthly)
+  const HEM = {
+    sydney: { single: 1800, couple: 2400, perDependent: 400 },
+    melbourne: { single: 1700, couple: 2300, perDependent: 380 },
+    other_metro: { single: 1500, couple: 2000, perDependent: 350 },
+    regional: { single: 1300, couple: 1800, perDependent: 320 }
+  };
+  
+  // ===== TAB SWITCHING =====
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    if (tabName === 'facility') renderFacilitiesTab();
+    if (tabName === 'income') renderIncomeTab();
+    if (tabName === 'expenses') renderExpensesTab();
+  }
+  
+  // ===== ENTITY MANAGEMENT =====
+  function addCompanyEntity() {
+    const id = ++entityIdCounter;
+    data.companies.push({
+      id,
+      name: 'Company ' + data.companies.length + 1,
+      type: 'company',
+      ebitda: 0,
+      distribution: 0,
+      holders: []
+    });
+    renderCompanyEntities();
+    calculate();
+  }
+  
+  function addIndividualEntity() {
+    const id = ++entityIdCounter;
+    if (data.households.length === 0) {
+      data.households.push({ id: ++householdIdCounter, name: 'Household 1' });
+    }
+    data.individuals.push({
+      id,
+      name: 'Individual ' + (data.individuals.length + 1),
+      householdId: data.households[0].id,
+      income: 0,
+      incomeType: 'none',
+      expenses: 0,
+      dependents: 0,
+      existingDebt: 0,
+      creditCards: 0
+    });
+    renderIndividualEntities();
+    calculate();
+  }
+  
+  function addHousehold() {
+    const id = ++householdIdCounter;
+    data.households.push({ id, name: 'Household ' + data.households.length + 1 });
+    renderIndividualEntities();
+  }
+  
+  function addFacility() {
+    const id = ++facilityIdCounter;
+    data.facilities.push({
+      id,
+      name: 'Facility ' + data.facilities.length + 1,
+      borrowerId: null,
+      borrowerType: 'company', // 'company' or 'individual'
+      limit: 0,
+      rate: 7.0,
+      type: 'term' // 'term', 'revolving', 'overdraft'
+    });
+    renderFacilitiesTab();
+    calculate();
+  }
+  
+  function removeCompany(id) {
+    data.companies = data.companies.filter(c => c.id !== id);
+    data.facilities = data.facilities.filter(f => !(f.borrowerType === 'company' && f.borrowerId === id));
+    renderCompanyEntities();
+    calculate();
+  }
+  
+  function removeIndividual(id) {
+    data.individuals = data.individuals.filter(i => i.id !== id);
+    data.companies.forEach(c => {
+      c.holders = c.holders.filter(h => h.entityId !== id);
+    });
+    data.facilities = data.facilities.filter(f => !(f.borrowerType === 'individual' && f.borrowerId === id));
+    renderIndividualEntities();
+    calculate();
+  }
+  
+  function removeFacility(id) {
+    data.facilities = data.facilities.filter(f => f.id !== id);
+    renderFacilitiesTab();
+    calculate();
+  }
+  
+  // ===== RENDER FUNCTIONS =====
+  function renderCompanyEntities() {
+    const container = document.getElementById('companyEntitiesContainer');
+    if (data.companies.length === 0) {
+      container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 10px;">No business entities yet</p>';
+      return;
+    }
+    
+    container.innerHTML = data.companies.map(c => {
+      const totalHolding = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
+      const holdingAlert = c.holders.length > 0 && totalHolding !== 100;
+      const typeLabel = c.type === 'trust' ? 'TRUST' : c.type === 'partnership' ? 'P/SHIP' : 'CO';
+      
+      return `
+        <div class="entity-card company">
+          <div class="entity-card-header">
+            <div class="entity-card-title">
+              <span class="entity-type-badge company">${typeLabel}</span>
+              <input type="text" value="${c.name}" onchange="updateCompany(${c.id}, 'name', this.value)" style="border: none; background: transparent; font-weight: 600; font-size: 12px; width: 150px;">
+            </div>
+            <button class="remove-btn" onclick="removeCompany(${c.id})">×</button>
+          </div>
+          
+          <div class="form-group">
+            <label>Entity Type</label>
+            <select onchange="updateCompany(${c.id}, 'type', this.value)">
+              <option value="company" ${c.type === 'company' ? 'selected' : ''}>Company (Pty Ltd)</option>
+              <option value="trust" ${c.type === 'trust' ? 'selected' : ''}>Trust</option>
+              <option value="partnership" ${c.type === 'partnership' ? 'selected' : ''}>Partnership</option>
+            </select>
+          </div>
+          
+          <div class="section-title" style="margin-top: 12px; font-size: 9px;">Beneficial Holders</div>
+          <div id="holders-${c.id}">
+            ${renderHolders(c)}
+          </div>
+          ${holdingAlert ? `
+            <div style="background: var(--danger-light); color: var(--danger); padding: 6px 10px; border-radius: 6px; font-size: 10px; margin-top: 8px;">
+              ⚠️ Holdings total ${totalHolding.toFixed(0)}% — must equal 100%
+            </div>
+          ` : c.holders.length > 0 ? `
+            <div style="background: var(--success-light); color: var(--success); padding: 6px 10px; border-radius: 6px; font-size: 10px; margin-top: 8px;">
+              ✓ Holdings total 100%
+            </div>
+          ` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="addHolder(${c.id})" style="margin-top: 6px;">+ Add Holder</button>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  function renderHolders(company) {
+    if (company.holders.length === 0) {
+      return '<p style="color: var(--muted); font-size: 10px; padding: 6px;">No holders defined</p>';
+    }
+    
+    return company.holders.map((h, idx) => `
+      <div class="holder-row">
+        <select onchange="updateHolder(${company.id}, ${idx}, 'entityId', parseInt(this.value) || this.value)">
+          <option value="">Select individual...</option>
+          <option value="other" ${h.entityId === 'other' ? 'selected' : ''}>Other (external)</option>
+          ${data.individuals.map(i => 
+            `<option value="${i.id}" ${h.entityId === i.id ? 'selected' : ''}>${i.name}</option>`
+          ).join('')}
+        </select>
+        <input type="number" value="${h.percentage || ''}" placeholder="%" onchange="updateHolder(${company.id}, ${idx}, 'percentage', parseFloat(this.value) || 0)" style="width: 60px;">
+        <span style="font-size: 10px; color: var(--muted);">%</span>
+        <button class="remove-btn" onclick="removeHolder(${company.id}, ${idx})">×</button>
+      </div>
+    `).join('');
+  }
+  
+  function addHolder(companyId) {
+    const company = data.companies.find(c => c.id === companyId);
+    if (company) {
+      company.holders.push({ entityId: '', percentage: 0 });
+      renderCompanyEntities();
+    }
+  }
+  
+  function removeHolder(companyId, idx) {
+    const company = data.companies.find(c => c.id === companyId);
+    if (company) {
+      company.holders.splice(idx, 1);
+      renderCompanyEntities();
+      calculate();
+    }
+  }
+  
+  function updateHolder(companyId, idx, field, value) {
+    const company = data.companies.find(c => c.id === companyId);
+    if (company && company.holders[idx]) {
+      company.holders[idx][field] = value;
+      renderCompanyEntities();
+      calculate();
+    }
+  }
+  
+  function renderIndividualEntities() {
+    const container = document.getElementById('individualEntitiesContainer');
+    if (data.individuals.length === 0) {
+      container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 10px;">No individuals yet</p>';
+      return;
+    }
+    
+    container.innerHTML = data.individuals.map(i => `
+      <div class="entity-card individual">
+        <div class="entity-card-header">
+          <div class="entity-card-title">
+            <span class="entity-type-badge individual">IND</span>
+            <input type="text" value="${i.name}" onchange="updateIndividual(${i.id}, 'name', this.value)" style="border: none; background: transparent; font-weight: 600; font-size: 12px; width: 150px;">
+          </div>
+          <button class="remove-btn" onclick="removeIndividual(${i.id})">×</button>
+        </div>
+        <div class="form-group">
+          <label>Household</label>
+          <div style="display: flex; gap: 6px;">
+            <select style="flex: 1;" onchange="updateIndividual(${i.id}, 'householdId', parseInt(this.value))">
+              ${data.households.map(h => 
+                `<option value="${h.id}" ${i.householdId === h.id ? 'selected' : ''}>${h.name}</option>`
+              ).join('')}
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="addHousehold()" title="Add new household">+</button>
+          </div>
+          <div class="helper">Group individuals sharing living expenses</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  function renderFacilitiesTab() {
+    const container = document.getElementById('facilitiesContainer');
+    if (data.facilities.length === 0) {
+      container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">No facilities yet. Add facilities to calculate interest expense.</p>';
+      return;
+    }
+    
+    const allBorrowers = [
+      ...data.companies.map(c => ({ id: c.id, name: c.name, type: 'company' })),
+      ...data.individuals.map(i => ({ id: i.id, name: i.name, type: 'individual' }))
+    ];
+    
+    container.innerHTML = data.facilities.map(f => {
+      const annualInterest = (f.limit || 0) * ((f.rate || 0) / 100);
+      
+      return `
+        <div class="entity-card facility">
+          <div class="entity-card-header">
+            <div class="entity-card-title">
+              <span class="entity-type-badge facility">FAC</span>
+              <input type="text" value="${f.name}" onchange="updateFacility(${f.id}, 'name', this.value)" style="border: none; background: transparent; font-weight: 600; font-size: 12px; width: 120px;">
+            </div>
+            <button class="remove-btn" onclick="removeFacility(${f.id})">×</button>
+          </div>
+          
+          <div class="form-group">
+            <label>Borrower</label>
+            <select onchange="updateFacilityBorrower(${f.id}, this.value)">
+              <option value="">Select borrower...</option>
+              ${allBorrowers.map(b => 
+                `<option value="${b.type}:${b.id}" ${f.borrowerType === b.type && f.borrowerId === b.id ? 'selected' : ''}>${b.name} (${b.type === 'company' ? 'Business' : 'Individual'})</option>`
+              ).join('')}
+            </select>
+          </div>
+          
+          <div class="row">
+            <div class="form-group">
+              <label>Facility Limit</label>
+              <input type="number" value="${f.limit || ''}" placeholder="0" onchange="updateFacility(${f.id}, 'limit', parseFloat(this.value) || 0)">
+            </div>
+            <div class="form-group">
+              <label>Interest Rate %</label>
+              <input type="number" value="${f.rate || ''}" placeholder="7.0" step="0.1" onchange="updateFacility(${f.id}, 'rate', parseFloat(this.value) || 0)">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Facility Type</label>
+            <select onchange="updateFacility(${f.id}, 'type', this.value)">
+              <option value="term" ${f.type === 'term' ? 'selected' : ''}>Term Loan</option>
+              <option value="revolving" ${f.type === 'revolving' ? 'selected' : ''}>Revolving Credit</option>
+              <option value="overdraft" ${f.type === 'overdraft' ? 'selected' : ''}>Overdraft</option>
+            </select>
+          </div>
+          
+          <div class="mini-metrics">
+            <div class="mini-metric">
+              <div class="mini-metric-label">Annual Interest</div>
+              <div class="mini-metric-value negative">-${fmt(annualInterest)}</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mini-metric-label">Monthly Interest</div>
+              <div class="mini-metric-value negative">-${fmt(annualInterest / 12)}</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  function renderIncomeTab() {
+    // Business Income
+    const bizContainer = document.getElementById('businessIncomeContainer');
+    if (data.companies.length === 0) {
+      bizContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add business entities in the Entities tab first</p>';
+    } else {
+      bizContainer.innerHTML = data.companies.map(c => {
+        const interest = getCompanyInterest(c.id);
+        const icr = interest > 0 ? ((c.ebitda || 0) / interest).toFixed(2) + 'x' : 'N/A';
+        const totalHolding = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
+        const distribution = Math.min(c.distribution || 0, c.ebitda || 0);
+        
+        // Calculate distribution per holder
+        const distributions = c.holders.map(h => {
+          const share = totalHolding > 0 ? (distribution * (h.percentage || 0) / totalHolding) : 0;
+          const ind = data.individuals.find(i => i.id === h.entityId);
+          return {
+            name: ind ? ind.name : (h.entityId === 'other' ? 'External' : 'Unknown'),
+            percentage: h.percentage || 0,
+            amount: share
+          };
+        });
+        
+        return `
+          <div class="entity-card company">
+            <div class="entity-card-header">
+              <div class="entity-card-title">
+                <span class="entity-type-badge company">${c.type === 'trust' ? 'TRUST' : c.type === 'partnership' ? 'P/SHIP' : 'CO'}</span>
+                ${c.name}
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="form-group">
+                <label>EBITDA (Annual)</label>
+                <input type="number" value="${c.ebitda || ''}" placeholder="0" onchange="updateCompany(${c.id}, 'ebitda', parseFloat(this.value) || 0)">
+              </div>
+              <div class="form-group">
+                <label>Interest Expense (from Facilities)</label>
+                <input type="number" value="${interest}" readonly>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Total Distribution to Holders (Annual)</label>
+              <input type="number" value="${c.distribution || ''}" placeholder="0" max="${c.ebitda || 0}" onchange="updateCompany(${c.id}, 'distribution', Math.min(parseFloat(this.value) || 0, ${c.ebitda || 0}))">
+              <div class="helper">Max: ${fmt(c.ebitda || 0)} (EBITDA). Auto-allocated by shareholding %.</div>
+            </div>
+            
+            ${distributions.length > 0 && distribution > 0 ? `
+              <div style="margin-top: 8px;">
+                <div style="font-size: 10px; color: var(--muted); margin-bottom: 6px;">Distribution Breakdown:</div>
+                ${distributions.map(d => `
+                  <div class="distribution-row">
+                    <span class="name">${d.name}</span>
+                    <span class="percent">${d.percentage.toFixed(0)}%</span>
+                    <span class="amount">${fmt(d.amount)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
+            
+            <div class="mini-metrics">
+              <div class="mini-metric">
+                <div class="mini-metric-label">ICR</div>
+                <div class="mini-metric-value ${getICRClass(c.ebitda, interest)}">${icr}</div>
+              </div>
+              <div class="mini-metric">
+                <div class="mini-metric-label">DSCR</div>
+                <div class="mini-metric-value ${getDSCRClass(c.ebitda, interest)}">${calcDSCR(c.ebitda, interest)}</div>
+              </div>
+              <div class="mini-metric">
+                <div class="mini-metric-label">Monthly EBITDA</div>
+                <div class="mini-metric-value neutral">${fmt((c.ebitda || 0) / 12)}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // Individual Income
+    const indContainer = document.getElementById('individualIncomeContainer');
+    if (data.individuals.length === 0) {
+      indContainer.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals in the Entities tab first</p>';
+    } else {
+      indContainer.innerHTML = data.individuals.map(i => `
+        <div class="entity-card individual">
+          <div class="entity-card-header">
+            <div class="entity-card-title">
+              <span class="entity-type-badge individual">IND</span>
+              ${i.name}
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Personal Income Type</label>
+            <select onchange="updateIndividual(${i.id}, 'incomeType', this.value); renderIncomeTab();">
+              <option value="none" ${i.incomeType === 'none' ? 'selected' : ''}>No personal income</option>
+              <option value="payg" ${i.incomeType === 'payg' ? 'selected' : ''}>PAYG Employment</option>
+              <option value="other" ${i.incomeType === 'other' ? 'selected' : ''}>Other Income</option>
+            </select>
+          </div>
+          ${i.incomeType !== 'none' ? `
+            <div class="form-group">
+              <label>Annual Income</label>
+              <input type="number" value="${i.income || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'income', parseFloat(this.value) || 0)">
+            </div>
+          ` : ''}
+          <div class="helper">Business profit distributed via beneficial holding is shown in distribution breakdown above.</div>
+        </div>
+      `).join('');
+    }
+  }
+  
+  function renderExpensesTab() {
+    const container = document.getElementById('expensesContainer');
+    if (data.individuals.length === 0) {
+      container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">Add individuals in the Entities tab first</p>';
+      return;
+    }
+    
+    container.innerHTML = data.individuals.map(i => {
+      const hem = calcHEM(i);
+      const usedExpenses = Math.max(i.expenses || 0, hem);
+      
+      return `
+        <div class="entity-card individual">
+          <div class="entity-card-header">
+            <div class="entity-card-title">
+              <span class="entity-type-badge individual">IND</span>
+              ${i.name}
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="form-group">
+              <label>Dependents</label>
+              <select onchange="updateIndividual(${i.id}, 'dependents', parseInt(this.value)); renderExpensesTab();">
+                <option value="0" ${i.dependents === 0 ? 'selected' : ''}>0</option>
+                <option value="1" ${i.dependents === 1 ? 'selected' : ''}>1</option>
+                <option value="2" ${i.dependents === 2 ? 'selected' : ''}>2</option>
+                <option value="3" ${i.dependents === 3 ? 'selected' : ''}>3</option>
+                <option value="4" ${i.dependents === 4 ? 'selected' : ''}>4+</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Declared Expenses (Monthly)</label>
+              <input type="number" value="${i.expenses || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'expenses', parseFloat(this.value) || 0); renderExpensesTab();">
+            </div>
+          </div>
+          
+          <div style="background: var(--bg); padding: 8px 10px; border-radius: 6px; margin: 8px 0; font-size: 11px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="color: var(--muted);">HEM Estimate:</span>
+              <span style="font-weight: 600;">${fmt(hem)}/mo</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: var(--muted);">Used for Assessment:</span>
+              <span style="font-weight: 600; color: ${usedExpenses === hem ? 'var(--warning)' : 'var(--navy)'};">${fmt(usedExpenses)}/mo ${usedExpenses === hem ? '(HEM)' : ''}</span>
+            </div>
+          </div>
+          
+          <div class="row">
+            <div class="form-group">
+              <label>Credit Card Limits</label>
+              <input type="number" value="${i.creditCards || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'creditCards', parseFloat(this.value) || 0)">
+            </div>
+            <div class="form-group">
+              <label>Existing Debt Repayments (Monthly)</label>
+              <input type="number" value="${i.existingDebt || ''}" placeholder="0" onchange="updateIndividual(${i.id}, 'existingDebt', parseFloat(this.value) || 0)">
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+  
+  // ===== UPDATE FUNCTIONS =====
+  function updateCompany(id, field, value) {
+    const company = data.companies.find(c => c.id === id);
+    if (company) {
+      company[field] = value;
+      if (field === 'distribution') {
+        company.distribution = Math.min(value, company.ebitda || 0);
+      }
+      calculate();
+    }
+  }
+  
+  function updateIndividual(id, field, value) {
+    const ind = data.individuals.find(i => i.id === id);
+    if (ind) {
+      ind[field] = value;
+      calculate();
+    }
+  }
+  
+  function updateFacility(id, field, value) {
+    const facility = data.facilities.find(f => f.id === id);
+    if (facility) {
+      facility[field] = value;
+      renderFacilitiesTab();
+      calculate();
+    }
+  }
+  
+  function updateFacilityBorrower(id, value) {
+    const facility = data.facilities.find(f => f.id === id);
+    if (facility && value) {
+      const [type, borrowerId] = value.split(':');
+      facility.borrowerType = type;
+      facility.borrowerId = parseInt(borrowerId);
+      calculate();
+    }
+  }
+  
+  // ===== CALCULATION HELPERS =====
+  function getCompanyInterest(companyId) {
+    return data.facilities
+      .filter(f => f.borrowerType === 'company' && f.borrowerId === companyId)
+      .reduce((sum, f) => sum + ((f.limit || 0) * ((f.rate || 0) / 100)), 0);
+  }
+  
+  function getIndividualInterest(individualId) {
+    return data.facilities
+      .filter(f => f.borrowerType === 'individual' && f.borrowerId === individualId)
+      .reduce((sum, f) => sum + ((f.limit || 0) * ((f.rate || 0) / 100)), 0);
+  }
+  
+  function calcICR(ebitda, interest) {
+    if (!interest || interest === 0) return 'N/A';
+    return ((ebitda || 0) / interest).toFixed(2) + 'x';
+  }
+  
+  function getICRClass(ebitda, interest) {
+    if (!interest || interest === 0) return 'neutral';
+    const icr = (ebitda || 0) / interest;
+    if (icr >= 1.5) return 'positive';
+    if (icr >= 1.0) return 'neutral';
+    return 'negative';
+  }
+  
+  function calcDSCR(ebitda, interest) {
+    if (!interest || interest === 0) return 'N/A';
+    const annualDebt = interest * 1.5;
+    return ((ebitda || 0) / annualDebt).toFixed(2) + 'x';
+  }
+  
+  function getDSCRClass(ebitda, interest) {
+    if (!interest || interest === 0) return 'neutral';
+    const dscr = (ebitda || 0) / (interest * 1.5);
+    if (dscr >= 1.25) return 'positive';
+    if (dscr >= 1.0) return 'neutral';
+    return 'negative';
+  }
+  
+  function calcHEM(individual) {
+    const hem = HEM[data.settings.hemLocation];
+    const base = hem.single;
+    return base + ((individual.dependents || 0) * hem.perDependent);
+  }
+  
+  function fmt(num) {
+    if (isNaN(num)) return '$0';
+    return '$' + Math.round(num).toLocaleString();
+  }
+  
+  // ===== MAIN CALCULATION =====
+  function calculate() {
+    let totalBusinessIncome = 0;
+    const individualIncome = {};
+    const distributedIncome = {};
+    
+    data.individuals.forEach(i => {
+      individualIncome[i.id] = i.income || 0;
+      distributedIncome[i.id] = 0;
+    });
+    
+    // Calculate business distributions
+    data.companies.forEach(c => {
+      totalBusinessIncome += c.ebitda || 0;
+      
+      const distribution = Math.min(c.distribution || 0, c.ebitda || 0);
+      const totalHolding = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
+      
+      c.holders.forEach(h => {
+        const entityId = parseInt(h.entityId);
+        const percentage = parseFloat(h.percentage) || 0;
+        
+        if (entityId && !isNaN(entityId) && percentage > 0 && totalHolding > 0) {
+          const share = distribution * (percentage / totalHolding);
+          individualIncome[entityId] = (individualIncome[entityId] || 0) + share;
+          distributedIncome[entityId] = (distributedIncome[entityId] || 0) + share;
+        }
+      });
+    });
+    
+    // Calculate totals
+    let totalPersonalIncome = 0;
+    let totalExpenses = 0;
+    let totalDebt = 0;
+    
+    data.individuals.forEach(i => {
+      totalPersonalIncome += individualIncome[i.id] || 0;
+      const hem = calcHEM(i);
+      totalExpenses += Math.max(i.expenses || 0, hem);
+      totalDebt += (i.existingDebt || 0) + (i.creditCards || 0) * 0.03;
+      totalDebt += getIndividualInterest(i.id) / 12;
+    });
+    
+    const monthlyBusinessIncome = totalBusinessIncome / 12;
+    const monthlyPersonalIncome = totalPersonalIncome / 12;
+    const monthlyExpenses = totalExpenses;
+    const monthlyDebt = totalDebt;
+    const monthlySurplus = monthlyBusinessIncome + monthlyPersonalIncome - monthlyExpenses - monthlyDebt;
+    
+    // Borrowing capacity
+    const buffer = parseFloat(document.getElementById('bufferRate').value) || 3;
+    const assessmentRate = 7 + buffer;
+    const loanTerm = parseInt(document.getElementById('loanTerm').value) || 30;
+    
+    let borrowingCapacity = 0;
+    if (monthlySurplus > 0) {
+      const r = assessmentRate / 100 / 12;
+      const n = loanTerm * 12;
+      borrowingCapacity = monthlySurplus * (1 - Math.pow(1 + r, -n)) / r;
+      borrowingCapacity = Math.round(borrowingCapacity / 1000) * 1000;
+    }
+    
+    // DTI
+    const totalAnnualIncome = totalBusinessIncome + totalPersonalIncome;
+    const totalAnnualDebt = totalDebt * 12;
+    const dti = totalAnnualIncome > 0 ? totalAnnualDebt / totalAnnualIncome : 0;
+    
+    // Update display
+    document.getElementById('metricCapacity').textContent = fmt(borrowingCapacity);
+    document.getElementById('metricSurplus').textContent = fmt(monthlySurplus);
+    document.getElementById('metricSurplus').className = 'metric-value ' + (monthlySurplus >= 0 ? 'positive' : 'negative');
+    document.getElementById('metricDTI').textContent = dti.toFixed(1) + 'x';
+    document.getElementById('metricDTI').className = 'metric-value ' + (dti <= 6 ? 'positive' : dti <= 8 ? 'neutral' : 'negative');
+    
+    // Waterfall
+    const wfMax = Math.max(monthlyBusinessIncome, monthlyPersonalIncome, monthlyExpenses, monthlyDebt, Math.abs(monthlySurplus), 1);
+    const wfScale = 140 / wfMax;
+    
+    document.getElementById('wfBusiness').style.height = (monthlyBusinessIncome * wfScale) + 'px';
+    document.getElementById('wfBusinessVal').textContent = fmt(monthlyBusinessIncome);
+    document.getElementById('wfPersonal').style.height = (monthlyPersonalIncome * wfScale) + 'px';
+    document.getElementById('wfPersonalVal').textContent = fmt(monthlyPersonalIncome);
+    document.getElementById('wfExpenses').style.height = (monthlyExpenses * wfScale) + 'px';
+    document.getElementById('wfExpensesVal').textContent = '-' + fmt(monthlyExpenses);
+    document.getElementById('wfDebt').style.height = (monthlyDebt * wfScale) + 'px';
+    document.getElementById('wfDebtVal').textContent = '-' + fmt(monthlyDebt);
+    document.getElementById('wfSurplus').style.height = (Math.abs(monthlySurplus) * wfScale) + 'px';
+    document.getElementById('wfSurplus').className = 'waterfall-fill ' + (monthlySurplus >= 0 ? 'result' : 'deficit');
+    document.getElementById('wfSurplusVal').textContent = fmt(monthlySurplus);
+    document.getElementById('wfSurplusVal').className = 'waterfall-value ' + (monthlySurplus >= 0 ? 'result-val' : 'expense-val');
+    
+    renderEntitySummary();
+    renderBusinessTable();
+    renderIndividualTable(individualIncome, distributedIncome);
+    renderAlerts(dti);
+  }
+  
+  function renderEntitySummary() {
+    const container = document.getElementById('entitySummaryContainer');
+    if (data.companies.length === 0 && data.individuals.length === 0) {
+      container.innerHTML = '<p style="color: var(--muted); font-size: 11px; text-align: center; padding: 20px;">No entities added yet</p>';
+      return;
+    }
+    
+    let html = '';
+    data.companies.forEach(c => {
+      const interest = getCompanyInterest(c.id);
+      html += `
+        <div class="entity-summary-card company">
+          <div class="entity-summary-header">
+            <span class="entity-summary-name">${c.name}</span>
+            <span class="entity-type-badge company">${c.type === 'trust' ? 'TRUST' : c.type === 'partnership' ? 'P/SHIP' : 'CO'}</span>
+          </div>
+          <div class="entity-summary-metrics">
+            <div><div class="entity-summary-metric-label">EBITDA</div><div class="entity-summary-metric-value">${fmt(c.ebitda)}</div></div>
+            <div><div class="entity-summary-metric-label">ICR</div><div class="entity-summary-metric-value">${calcICR(c.ebitda, interest)}</div></div>
+          </div>
+        </div>
+      `;
+    });
+    
+    data.individuals.forEach(i => {
+      html += `
+        <div class="entity-summary-card individual">
+          <div class="entity-summary-header">
+            <span class="entity-summary-name">${i.name}</span>
+            <span class="entity-type-badge individual">IND</span>
+          </div>
+          <div class="entity-summary-metrics">
+            <div><div class="entity-summary-metric-label">Income</div><div class="entity-summary-metric-value">${fmt(i.income)}/yr</div></div>
+            <div><div class="entity-summary-metric-label">Dependents</div><div class="entity-summary-metric-value">${i.dependents}</div></div>
+          </div>
+        </div>
+      `;
+    });
+    
+    container.innerHTML = html;
+  }
+  
+  function renderBusinessTable() {
+    const tbody = document.getElementById('businessTableBody');
+    if (data.companies.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--muted);">No business entities</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = data.companies.map(c => {
+      const interest = getCompanyInterest(c.id);
+      return `
+        <tr>
+          <td><strong>${c.name}</strong></td>
+          <td class="amount positive">${fmt(c.ebitda)}</td>
+          <td class="amount negative">-${fmt(interest)}</td>
+          <td class="amount ${getICRClass(c.ebitda, interest)}">${calcICR(c.ebitda, interest)}</td>
+          <td class="amount ${getDSCRClass(c.ebitda, interest)}">${calcDSCR(c.ebitda, interest)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  function renderIndividualTable(incomeByPerson, distributedIncome) {
+    const tbody = document.getElementById('individualTableBody');
+    if (data.individuals.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color: var(--muted);">No individuals</td></tr>';
+      return;
+    }
+    
+    tbody.innerHTML = data.individuals.map(i => {
+      const totalIncome = incomeByPerson[i.id] || 0;
+      const bizIncome = distributedIncome[i.id] || 0;
+      const personalIncome = i.income || 0;
+      const expenses = Math.max(i.expenses || 0, calcHEM(i));
+      const debt = (i.existingDebt || 0) + (i.creditCards || 0) * 0.03 + (getIndividualInterest(i.id) / 12);
+      const dti = totalIncome > 0 ? (debt * 12) / totalIncome : 0;
+      
+      const incomeBreakdown = bizIncome > 0 
+        ? `<span style="font-size: 9px; color: var(--muted);">(${fmt(personalIncome/12)} + ${fmt(bizIncome/12)} dist)</span>`
+        : '';
+      
+      return `
+        <tr>
+          <td><strong>${i.name}</strong></td>
+          <td class="amount positive">${fmt(totalIncome / 12)}/mo ${incomeBreakdown}</td>
+          <td class="amount negative">-${fmt(expenses)}/mo</td>
+          <td class="amount negative">-${fmt(debt)}/mo</td>
+          <td class="amount ${dti <= 6 ? 'positive' : dti <= 8 ? 'neutral' : 'negative'}">${dti.toFixed(1)}x</td>
+        </tr>
+      `;
+    }).join('');
+  }
+  
+  function renderAlerts(dti) {
+    const alerts = [];
+    
+    data.companies.forEach(c => {
+      const interest = getCompanyInterest(c.id);
+      if (interest > 0) {
+        const icr = (c.ebitda || 0) / interest;
+        if (icr < 1.0) {
+          alerts.push({ type: 'danger', message: `⚠️ ${c.name}: ICR ${icr.toFixed(2)}x is below 1.0 — unable to cover interest` });
+        }
+        const dscr = (c.ebitda || 0) / (interest * 1.5);
+        if (dscr < 1.0) {
+          alerts.push({ type: 'danger', message: `⚠️ ${c.name}: DSCR ${dscr.toFixed(2)}x is below 1.0 — unable to cover debt service` });
+        }
+      }
+      
+      if (c.holders.length > 0) {
+        const total = c.holders.reduce((sum, h) => sum + (parseFloat(h.percentage) || 0), 0);
+        if (total !== 100) {
+          alerts.push({ type: 'warning', message: `⚡ ${c.name}: Beneficial holdings total ${total}% (should be 100%)` });
+        }
+      }
+    });
+    
+    if (dti > 8) {
+      alerts.push({ type: 'danger', message: `⚠️ Household DTI ${dti.toFixed(1)}x exceeds 8x — very high debt burden` });
+    } else if (dti > 6) {
+      alerts.push({ type: 'warning', message: `⚡ Household DTI ${dti.toFixed(1)}x exceeds 6x — elevated debt burden` });
+    }
+    
+    const container = document.getElementById('alertsContainer');
+    if (alerts.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+    
+    container.style.display = 'block';
+    container.innerHTML = alerts.map(a => `
+      <div style="background: ${a.type === 'danger' ? 'var(--danger-light)' : 'var(--warning-light)'}; 
+                  color: ${a.type === 'danger' ? 'var(--danger)' : 'var(--warning)'}; 
+                  padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 8px;
+                  border-left: 4px solid ${a.type === 'danger' ? 'var(--danger)' : 'var(--warning)'};">
+        ${a.message}
+      </div>
+    `).join('');
+  }
+  
+  function setLenderTier(tier, el) {
+    data.settings.lenderTier = tier;
+    el.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    
+    const defaults = {
+      major: { buffer: 3.0, hint: 'Major banks: Stricter assessment, 3% buffer' },
+      second: { buffer: 3.0, hint: '2nd tier: Similar to majors, some flexibility' },
+      nonbank: { buffer: 2.5, hint: 'Non-banks: More flexible, 2.5% buffer common' },
+      private: { buffer: 1.0, hint: 'Private: Focus on exit strategy, low buffer' }
+    };
+    
+    document.getElementById('bufferRate').value = defaults[tier].buffer;
+    document.getElementById('tierHint').textContent = defaults[tier].hint;
+    calculate();
+  }
+  
+  function resetAll() {
+    if (confirm('Reset all data?')) location.reload();
+  }
+  
+  // ===== PDF EXPORT =====
+  function exportPDF() {
+    const element = document.querySelector('.preview');
+    const timestamp = new Date().toISOString().slice(0, 10);
+    
+    // Temporarily hide waterfall for cleaner PDF (optional)
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: `servicing-summary-${timestamp}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        logging: false
+      },
+      jsPDF: { 
+        unit: 'mm', 
+        format: 'a4', 
+        orientation: 'portrait' 
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    
+    // Show loading state
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Generating...';
+    btn.disabled = true;
+    
+    html2pdf().set(opt).from(element).save().then(() => {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }).catch(err => {
+      console.error('PDF export failed:', err);
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+      alert('PDF export failed. Please try Print instead.');
+    });
+  }
+  
+  // ===== INPUT VALIDATION =====
+  function validateNumber(input, min = 0, max = Infinity, required = false) {
+    const value = parseFloat(input.value);
+    let isValid = true;
+    let errorMsg = '';
+    
+    if (required && (input.value === '' || isNaN(value))) {
+      isValid = false;
+      errorMsg = 'This field is required';
+    } else if (input.value !== '' && isNaN(value)) {
+      isValid = false;
+      errorMsg = 'Please enter a valid number';
+    } else if (value < min) {
+      isValid = false;
+      errorMsg = `Value must be at least ${min}`;
+    } else if (value > max) {
+      isValid = false;
+      errorMsg = `Value must not exceed ${max}`;
+    }
+    
+    input.classList.toggle('invalid', !isValid);
+    
+    // Find or create error element
+    let errorEl = input.parentElement.querySelector('.validation-error');
+    if (!errorEl) {
+      errorEl = document.createElement('div');
+      errorEl.className = 'validation-error';
+      input.parentElement.appendChild(errorEl);
+    }
+    errorEl.textContent = errorMsg;
+    errorEl.classList.toggle('show', !isValid);
+    
+    return isValid;
+  }
+  
+  function validatePercentage(input) {
+    return validateNumber(input, 0, 100);
+  }
+  
+  function validatePositive(input) {
+    return validateNumber(input, 0);
+  }
+  
+  // Attach validation to existing inputs
+  function attachValidation() {
+    // Validate all number inputs on change
+    document.querySelectorAll('input[type="number"]').forEach(input => {
+      input.addEventListener('blur', function() {
+        // Check if it's a percentage field
+        if (this.placeholder === '%' || this.style.width === '60px' || this.style.width === '70px') {
+          validatePercentage(this);
+        } else {
+          validatePositive(this);
+        }
+      });
+    });
+  }
+  
+  // Run on load
+  attachValidation();
+  
+  // Re-attach after dynamic content changes
+  const originalRenderCompanyEntities = renderCompanyEntities;
+  renderCompanyEntities = function() {
+    originalRenderCompanyEntities();
+    attachValidation();
+  };
+  
+  const originalRenderFacilitiesTab = renderFacilitiesTab;
+  renderFacilitiesTab = function() {
+    originalRenderFacilitiesTab();
+    attachValidation();
+  };
+  
+  const originalRenderIncomeTab = renderIncomeTab;
+  renderIncomeTab = function() {
+    originalRenderIncomeTab();
+    attachValidation();
+  };
+  
+  const originalRenderExpensesTab = renderExpensesTab;
+  renderExpensesTab = function() {
+    originalRenderExpensesTab();
+    attachValidation();
+  };
+  
+  renderCompanyEntities();
+  renderIndividualEntities();
+  calculate();
+</script>
+
+</body>
+</html>
